@@ -23,7 +23,8 @@ interface InsertGuest {
 }
 
 interface DeleteGuest {
-  phone: string;
+  phone?: string;
+  email?: string;
 }
 
 export class GuestService {

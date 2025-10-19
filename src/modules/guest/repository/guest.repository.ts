@@ -25,7 +25,8 @@ interface InsertGuestConfig {
   email: string;
 }
 interface DeleteGuestConfig {
-  phone: string;
+  phone?: string;
+  email?: string;
 }
 
 interface GetById {
@@ -77,9 +78,25 @@ export class KyselyGuestRepository extends GuestRepository {
   }
 
   public delete(deleteGuestConfig: DeleteGuestConfig): Promise<boolean> {
+    if (deleteGuestConfig.phone) {
+      return this.deleteByPhone(deleteGuestConfig);
+    }
+    if (deleteGuestConfig.email) {
+      return this.deleteByEmail(deleteGuestConfig);
+    }
+  }
+
+  private deleteByPhone(deleteGuestConfig: DeleteGuestConfig): Promise<boolean> {
     return this.kysely
       .deleteFrom("Guest")
       .where("Guest.phone", "=", deleteGuestConfig.phone)
+      .execute()
+      .then(() => true);
+  }
+    private deleteByEmail(deleteGuestConfig: DeleteGuestConfig): Promise<boolean> {
+    return this.kysely
+      .deleteFrom("Guest")
+      .where("Guest.email", "=", deleteGuestConfig.email)
       .execute()
       .then(() => true);
   }

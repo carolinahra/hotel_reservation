@@ -1,24 +1,24 @@
 import { Exception } from "@shared/exceptions/exception";
 import { LogService } from "./log.service";
-
-interface ErrorResponse {
-  httpCode: number;
-  message: string;
-}
+import { ErrorResponse } from "@shared/exceptions/error-response";
 
 export class ExceptionService {
-  constructor(private readonly logService: LogService) {}
+  constructor(
+    private readonly logService: LogService,
+  ) {}
   handle(error: Error): ErrorResponse {
     this.logService.collect({ error: error });
     if (error instanceof Exception) {
-      return {
+      const errorResponse = new ErrorResponse({
         httpCode: error.code,
-        message: error.message,
-      };
+        errorMessage: error.message,
+      });
+      return errorResponse;
     }
-    return {
+    const errorResponse = new ErrorResponse({
       httpCode: 500,
-      message: error.message,
-    };
+      errorMessage: error.message,
+    });
+    return errorResponse;
   }
 }

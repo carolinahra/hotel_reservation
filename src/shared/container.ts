@@ -26,6 +26,7 @@ import { ReservationDetailService } from "@reservation/services/reservation-deta
 import { ReservationService } from "@reservation/services/reservation.service";
 import { LogService } from "./services/log.service";
 import { ExceptionService } from "./services/exception.service";
+import { ErrorResponse } from "./exceptions/error-response";
 
 function connectDatabase(databaseConfig: DatabaseConfig) {
   let dialect;
@@ -119,7 +120,10 @@ export class Container {
     if (this.props.guestController) {
       return this.props.guestController;
     }
-    this.props.guestController = new GuestController(this.guestService);
+    this.props.guestController = new GuestController(
+      this.guestService,
+      this.exceptionService
+    );
     return this.props.guestController;
   }
   get roomRepository() {

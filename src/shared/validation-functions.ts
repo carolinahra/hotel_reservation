@@ -3,7 +3,7 @@ export function isValidId(id): boolean {
 }
 
 export function isValidName(name): boolean {
-  const nameRegex = /^[A-Za-z]{2,}$/;
+  const nameRegex = /^[A-Za-z\s]{2,}$/;
   return nameRegex.test(name);
 }
 export function isValidEmail(email): boolean {
