@@ -1,8 +1,7 @@
 import { Repository } from "@shared/repositories/repository";
 import { ReservationDetail } from "../models/reservation-detail";
-import { Kysely } from "kysely";
-import { ReservationDetailTable } from "@shared/database-models/reservation-detail.database-model";
-import e from "express";
+import { Kysely, Transaction } from "kysely";
+import { ReservationDetailTable } from "@shared/database-models/reservation-detail.databasemodel";
 
 interface GetReservationDetailConfig {
   id?: number;
@@ -33,7 +32,8 @@ interface GetByIdConfig {
 
 export abstract class ReservationDetailRepository extends Repository {
   abstract get(
-    getReservationDetailConfig: GetReservationDetailConfig
+    getReservationDetailConfig: GetReservationDetailConfig,
+    transaction?: Transaction<any>
   ): Promise<ReservationDetail | ReservationDetail[]>;
   abstract update(
     updateReservationDetailConfig: UpdateReservationDetailConfig
@@ -51,10 +51,11 @@ export class KyselyReservationDetailRepository extends ReservationDetailReposito
     super();
   }
   public get(
-    getReservationDetailConfig: GetReservationDetailConfig
+    getReservationDetailConfig: GetReservationDetailConfig,
+    transaction?: Transaction<ReservationDetailTable>
   ): Promise<ReservationDetail | ReservationDetail[]> {
     if (getReservationDetailConfig.id) {
-      return this.getById({ id: getReservationDetailConfig.id });
+      return this.getById({ id: getReservationDetailConfig.id }, transaction);
     }
     if (getReservationDetailConfig.reservationId) {
       return this.getByReservationId(getReservationDetailConfig);
@@ -93,8 +94,8 @@ export class KyselyReservationDetailRepository extends ReservationDetailReposito
       .then(() => true);
   }
 
-  private getById(config: GetByIdConfig) {
-    return this.kysely
+  private getById(config: GetByIdConfig, transaction?: Transaction<ReservationDetailTable>) {
+    return (transaction || this.kysely)
       .selectFrom("Reservation_Detail")
       .selectAll()
       .where("Reservation_Detail.id", "=", config.id)

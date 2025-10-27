@@ -26,7 +26,9 @@ export interface LogConfig {
 }
 
 export class LogService {
-  constructor(private config: LogConfig, private logData: LogData) {}
+  private logData: LogData = {};
+  constructor(private config: LogConfig) {}
+
   public start() {
     const start = Date.now();
     this.logData.startTime = start;

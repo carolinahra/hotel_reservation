@@ -16,4 +16,12 @@ export class RoomSize extends ValueObject<RoomSizeProps> {
     get size() {
         return this.props.size;
     }
+
+      public toPrimitives() {
+    return {
+      id: this.props.id,
+      name: this.props.name,
+      size: this.props.size,
+    };
+  }
 }

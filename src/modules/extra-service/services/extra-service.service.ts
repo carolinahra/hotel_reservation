@@ -1,4 +1,6 @@
+import { ExtraServiceTable } from "@shared/database-models/extra-service.database-model";
 import { ExtraService } from "../models/extra-service";
+import { Transaction } from "kysely";
 
 interface GetExtraService {
   id?: number;
@@ -26,9 +28,9 @@ export class ExtraServiceService {
   constructor(private readonly repository: ExtraServiceService) {}
 
   public get(
-    getExtraService: GetExtraService
+    getExtraService: GetExtraService, transaction?: Transaction<ExtraServiceTable>
   ): Promise<ExtraService | ExtraService[]> {
-    return this.repository.get(getExtraService);
+    return this.repository.get(getExtraService, transaction);
   }
   public update(updateExtraService: UpdateExtraService): Promise<ExtraService> {
     return this.repository.update(updateExtraService);

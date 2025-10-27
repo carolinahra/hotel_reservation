@@ -1,4 +1,4 @@
-import { Kysely } from "kysely";
+import { Kysely, Transaction } from "kysely";
 import { Repository } from "@shared/repositories/repository";
 import { GuestTable } from "@shared/database-models/guest.database-model";
 import { Guest } from "../models/guest";
@@ -13,10 +13,10 @@ interface GetGuestConfig {
 }
 
 interface UpdateGuestConfig {
-  phone: string;
+  id: number;
+  phone?: string;
   name?: string;
   email?: string;
-  newPhone?: string;
 }
 
 interface InsertGuestConfig {
@@ -33,7 +33,7 @@ interface GetById {
   id: number;
 }
 export abstract class GuestRepository extends Repository {
-  abstract get(getGuest: GetGuestConfig): Promise<Guest | Guest[]>;
+  abstract get(getGuest: GetGuestConfig, transaction?: Transaction<any>): Promise<Guest | Guest[]>;
   abstract update(updateGuestConfig: UpdateGuestConfig): Promise<Guest>;
   abstract insert(insertGuestConfig: InsertGuestConfig): Promise<Guest>;
   abstract delete(deleteGuestConfig: DeleteGuestConfig): Promise<boolean>;
@@ -44,9 +44,9 @@ export class KyselyGuestRepository extends GuestRepository {
     super();
   }
 
-  public get(getGuest: GetGuestConfig): Promise<Guest | Guest[]> {
+  public get(getGuest: GetGuestConfig, transaction?: Transaction<GuestTable>): Promise<Guest | Guest[]> {
     if (getGuest.id) {
-      return this.getById({ id: getGuest.id });
+      return this.getById({ id: getGuest.id }, transaction);
     }
     if (getGuest.name) {
       return this.getByName(getGuest);
@@ -57,12 +57,16 @@ export class KyselyGuestRepository extends GuestRepository {
   }
 
   public update(updateGuestConfig: UpdateGuestConfig): Promise<Guest> {
-    if (updateGuestConfig.name) {
-      return this.updateName(updateGuestConfig);
-    }
-    if (updateGuestConfig.newPhone) {
-      return this.updatePhone(updateGuestConfig);
-    }
+    return this.kysely
+      .updateTable("Guest")
+      .set({
+        name: updateGuestConfig.name,
+        phone: updateGuestConfig.phone,
+        email: updateGuestConfig.email,
+      })
+      .where("Guest.id", "=", updateGuestConfig.id)
+      .execute()
+      .then(() => this.getById({ id: updateGuestConfig.id }));
   }
 
   public insert(insertGuestConfig: InsertGuestConfig): Promise<Guest> {
@@ -71,7 +75,7 @@ export class KyselyGuestRepository extends GuestRepository {
       .values({
         name: insertGuestConfig.name,
         phone: insertGuestConfig.phone,
-        email: insertGuestConfig.email
+        email: insertGuestConfig.email,
       })
       .execute()
       .then((result) => this.getById({ id: Number(result[0].insertId) }));
@@ -86,14 +90,18 @@ export class KyselyGuestRepository extends GuestRepository {
     }
   }
 
-  private deleteByPhone(deleteGuestConfig: DeleteGuestConfig): Promise<boolean> {
+  private deleteByPhone(
+    deleteGuestConfig: DeleteGuestConfig
+  ): Promise<boolean> {
     return this.kysely
       .deleteFrom("Guest")
       .where("Guest.phone", "=", deleteGuestConfig.phone)
       .execute()
       .then(() => true);
   }
-    private deleteByEmail(deleteGuestConfig: DeleteGuestConfig): Promise<boolean> {
+  private deleteByEmail(
+    deleteGuestConfig: DeleteGuestConfig
+  ): Promise<boolean> {
     return this.kysely
       .deleteFrom("Guest")
       .where("Guest.email", "=", deleteGuestConfig.email)
@@ -101,10 +109,10 @@ export class KyselyGuestRepository extends GuestRepository {
       .then(() => true);
   }
 
-  private getById(config: GetById): Promise<Guest> {
-    return this.kysely
+  private getById(config: GetById, transaction?: Transaction<GuestTable>): Promise<Guest> {
+    return (transaction || this.kysely)
       .selectFrom("Guest")
-      .selectAll() //
+      .selectAll()
       .where("Guest.id", "=", config.id)
       .executeTakeFirstOrThrow()
       .then(
@@ -113,23 +121,21 @@ export class KyselyGuestRepository extends GuestRepository {
             id: guest.id,
             name: guest.name,
             phone: guest.phone,
-            email: guest.email
+            email: guest.email,
           })
       );
   }
 
   private getAll(getGuestConfig: GetGuestConfig): Promise<Guest[]> {
-    return (
-      this.kysely
-        .selectFrom("Guest")
-        .selectAll()
-        .limit(getGuestConfig.limit)
-        .offset(getGuestConfig.offset)
-        .execute()
-        .then((guests) => {
-          return guests.map((guest) => new Guest(guest));
-        })
-    );
+    return this.kysely
+      .selectFrom("Guest")
+      .selectAll()
+      .limit(getGuestConfig.limit)
+      .offset(getGuestConfig.offset)
+      .execute()
+      .then((guests) => {
+        return guests.map((guest) => new Guest(guest));
+      });
   }
 
   private getByName(getGuestConfig: GetGuestConfig): Promise<Guest[]> {
@@ -155,30 +161,8 @@ export class KyselyGuestRepository extends GuestRepository {
             id: guest.id,
             name: guest.name,
             phone: guest.phone,
-            email: guest.email
+            email: guest.email,
           })
       );
-  }
-
-  private updateName(updateGuestConfig: UpdateGuestConfig): Promise<Guest> {
-    return this.kysely
-      .updateTable("Guest")
-      .set({
-        name: updateGuestConfig.name,
-      })
-      .where("Guest.phone", "=", updateGuestConfig.phone)
-      .execute()
-      .then(() => this.getByPhone({ phone: updateGuestConfig.phone }));
-  }
-
-  private updatePhone(updateGuestConfig: UpdateGuestConfig): Promise<Guest> {
-    return this.kysely
-      .updateTable("Guest")
-      .set({
-        phone: updateGuestConfig.newPhone,
-      })
-      .where("Guest.phone", "=", updateGuestConfig.phone)
-      .execute()
-      .then(() => this.getByPhone({ phone: updateGuestConfig.phone }));
   }
 }

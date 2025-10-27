@@ -1,5 +1,7 @@
+import { Transaction } from "kysely";
 import { ReservationDetail } from "../models/reservation-detail";
 import { ReservationDetailRepository } from "../repositories/reservation-detail.repository";
+import { ReservationDetailTable } from "@shared/database-models/reservation-detail.databasemodel";
 
 interface GetReservationDetail {
   id?: number;
@@ -26,9 +28,10 @@ export class ReservationDetailService {
   constructor(private readonly repository: ReservationDetailRepository) {}
 
   public get(
-    getReservationDetail: GetReservationDetail
+    getReservationDetail: GetReservationDetail,
+    transaction?: Transaction<ReservationDetailTable>
   ): Promise<ReservationDetail | ReservationDetail[]> {
-    return this.repository.get(getReservationDetail);
+    return this.repository.get(getReservationDetail, transaction);
   }
   public update(
     updateReservationDetail: UpdateReservationDetail

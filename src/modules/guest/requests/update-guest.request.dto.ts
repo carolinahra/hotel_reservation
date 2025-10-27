@@ -3,22 +3,23 @@ import {
   isValidName,
   isValidPhone,
   isValidEmail,
+  isValidId,
 } from "@shared/validation-functions";
 export interface UpdateGuestRequest {
-  phone: unknown;
+  id: unknown;
+  phone?: unknown;
   name?: unknown;
-  newPhone?: unknown;
   email?: unknown;
 }
 
 function validate(request: UpdateGuestRequest): void {
+  if (request.id && !isValidId(request.id)) {
+    throw new InvalidRequestException();
+  }
   if (request.phone && !isValidPhone(request.phone)) {
     throw new InvalidRequestException();
   }
   if (request.name && !isValidName(request.name)) {
-    throw new InvalidRequestException();
-  }
-  if (request.newPhone && !isValidPhone(request.newPhone)) {
     throw new InvalidRequestException();
   }
   if (request.email && !isValidEmail(request.email)) {
@@ -27,20 +28,20 @@ function validate(request: UpdateGuestRequest): void {
 }
 
 export class UpdateGuestRequestDTO {
-  phone: string;
+  id: number;
+  phone?: string;
   name?: string;
-  newPhone?: string;
   email?: string;
 
   constructor(updateGuestRequest: {
-    phone: string;
+    id: number;
+    phone?: string;
     name?: string;
-    newPhone: string;
     email?: string;
   }) {
+    this.id = updateGuestRequest.id;
     this.phone = updateGuestRequest.phone;
     this.name = updateGuestRequest.name;
-    this.newPhone = updateGuestRequest.newPhone;
     this.email = updateGuestRequest.email;
   }
 
@@ -49,9 +50,9 @@ export class UpdateGuestRequestDTO {
   ): UpdateGuestRequestDTO {
     validate(request);
     return new UpdateGuestRequestDTO({
+      id: request.id == null ? null : Number(request.id),
       phone: request.phone == null ? null : String(request.phone),
       name: request.name == null ? null : String(request.name),
-      newPhone: request.newPhone == null ? null : String(request.newPhone),
       email: request.email == null ? null : String(request.email),
     });
   }

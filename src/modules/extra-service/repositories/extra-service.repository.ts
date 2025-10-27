@@ -1,7 +1,7 @@
 import { ExtraServiceTable } from "@shared/database-models/extra-service.database-model";
 import { ExtraService } from "../models/extra-service";
 import { Repository } from "@shared/repositories/repository";
-import { Kysely } from "kysely";
+import { Kysely, Transaction } from "kysely";
 
 interface GetExtraServiceConfig {
   id?: number;
@@ -30,7 +30,7 @@ interface GetById {
 }
 export abstract class ExtraServiceRepository extends Repository {
   abstract get(
-    getExtraService: GetExtraServiceConfig
+    getExtraService: GetExtraServiceConfig, transaction?: Transaction<any>
   ): Promise<ExtraService | ExtraService[]>;
   abstract update(
     updateExtraServiceConfig: UpdateExtraServiceConfig
@@ -49,10 +49,10 @@ export class KyselyExtraServiceRepository extends ExtraServiceRepository {
   }
 
   public get(
-    getExtraService: GetExtraServiceConfig
+    getExtraService: GetExtraServiceConfig, transaction?: Transaction<ExtraServiceTable>
   ): Promise<ExtraService | ExtraService[]> {
     if (getExtraService.id) {
-      return this.getById({ id: getExtraService.id });
+      return this.getById({ id: getExtraService.id }, transaction);
     }
     if (getExtraService.name) {
       return this.getByName(getExtraService);
@@ -99,8 +99,8 @@ export class KyselyExtraServiceRepository extends ExtraServiceRepository {
       .then(() => true);
   }
 
-  private getById(config: GetById): Promise<ExtraService> {
-    return this.kysely
+  private getById(config: GetById, transaction?: Transaction<ExtraServiceTable>): Promise<ExtraService> {
+    return (transaction || this.kysely)
       .selectFrom("Extra_Service")
       .selectAll() //
       .where("Extra_Service.id", "=", config.id)

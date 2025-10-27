@@ -1,24 +1,21 @@
 import { InvalidRequestException } from "@shared/exceptions/invalid-request.exception";
-import { isValidExternalReference } from "@shared/validation-functions";
+import { isValidId } from "@shared/validation-functions";
 
 interface DeleteReservationRequest {
-  externalReference: unknown;
+  id: unknown;
 }
 
 function validate(request: DeleteReservationRequest) {
-  if (
-    request.externalReference &&
-    !isValidExternalReference(request.externalReference)
-  ) {
+  if (request.id && !isValidId(request.id)) {
     throw new InvalidRequestException();
   }
 }
 
 export class DeleteReservationRequestDTO {
-  externalReference: string;
+  id: number;
 
-  constructor(DeleteReservationRequest: { externalReference: string }) {
-    this.externalReference = DeleteReservationRequest.externalReference;
+  constructor(DeleteReservationRequest: { id: number }) {
+    this.id = DeleteReservationRequest.id;
   }
 
   public static fromRequest(
@@ -26,10 +23,7 @@ export class DeleteReservationRequestDTO {
   ): DeleteReservationRequestDTO {
     validate(request);
     return new DeleteReservationRequestDTO({
-      externalReference:
-        request.externalReference == null
-          ? null
-          : String(request.externalReference),
+      id: request.id == null ? null : Number(request.id),
     });
   }
 }

@@ -9,7 +9,7 @@ export class ReservationDetail extends ValueObject<ReservationDetailProps> {
   public get number() {
     return this.props.id;
   }
-  
+
   public get reservation_id() {
     return this.props.reservation_id;
   }
@@ -18,5 +18,13 @@ export class ReservationDetail extends ValueObject<ReservationDetailProps> {
   }
   public get extra_service_id() {
     return this.props.extra_service_id;
+  }
+  public toPrimitives() {
+    return {
+      id: this.props.id,
+      reservation_id: this.props.reservation_id,
+      room_id: this.props.room_id,
+      extra_service_id: this.props.extra_service_id,
+    };
   }
 }

@@ -1,6 +1,6 @@
 import { ReservationTable } from "@shared/database-models/reservation.database-model";
 import { Repository } from "@shared/repositories/repository";
-import { Kysely } from "kysely";
+import { Kysely, Transaction } from "kysely";
 import { Reservation } from "../models/reservation";
 
 interface GetReservationConfig {
@@ -22,14 +22,17 @@ interface InsertReservationConfig {
 }
 
 interface UpdateReservationConfig {
+  id: number;
+  guestId: number;
   externalReference: string;
-  paymentStatus?: string;
-  checkInDate?: string;
-  checkoutDate?: string;
+  totalPrice: number;
+  paymentStatus: string;
+  checkInDate: string;
+  checkOutDate: string;
 }
 
 interface DeleteReservationConfig {
-  externalReference: string;
+  id: number;
 }
 
 interface getByIdConfig {
@@ -43,7 +46,7 @@ export abstract class ReservationRepository extends Repository {
     updateReservationConfig: UpdateReservationConfig
   ): Promise<Reservation>;
   abstract insert(
-    insertReservationConfig: InsertReservationConfig
+    insertReservationConfig: InsertReservationConfig, transaction?: Transaction<any> 
   ): Promise<Reservation>;
   abstract delete(
     deleteReservationConfig: DeleteReservationConfig
@@ -78,21 +81,35 @@ export class KyselyReservationRepository extends ReservationRepository {
   public update(
     updateReservationConfig: UpdateReservationConfig
   ): Promise<Reservation> {
-    if (updateReservationConfig.checkInDate) {
-      return this.updateCheckInDate(updateReservationConfig);
-    }
-    if (updateReservationConfig.checkoutDate) {
-      return this.updateCheckOutDate(updateReservationConfig);
-    }
-    if (updateReservationConfig.paymentStatus) {
-      return this.updatePaymentStatus(updateReservationConfig);
-    }
+    return this.kysely
+      .updateTable("Reservation")
+      .set({
+        id: updateReservationConfig.id,
+        guest_id: updateReservationConfig.guestId,
+        external_reference: updateReservationConfig.externalReference,
+        total_price: updateReservationConfig.totalPrice,
+        payment_status: updateReservationConfig.paymentStatus,
+        check_in_date: updateReservationConfig.checkInDate,
+        check_out_date: updateReservationConfig.checkOutDate,
+      })
+      .where(
+        "Reservation.external_reference",
+        "=",
+        updateReservationConfig.externalReference
+      )
+      .executeTakeFirst()
+      .then(() =>
+        this.getByExternalReference({
+          externalReference: updateReservationConfig.externalReference,
+        })
+      );
   }
 
   public insert(
-    insertReservationConfig: InsertReservationConfig
+    insertReservationConfig: InsertReservationConfig,
+    transaction?: Transaction<ReservationTable>
   ): Promise<Reservation> {
-    return this.kysely
+    return (transaction || this.kysely)
       .insertInto("Reservation")
       .values({
         guest_id: insertReservationConfig.guestId,
@@ -112,11 +129,7 @@ export class KyselyReservationRepository extends ReservationRepository {
   ): Promise<boolean> {
     return this.kysely
       .deleteFrom("Reservation")
-      .where(
-        "Reservation.external_reference",
-        "=",
-        deleteReservationConfig.externalReference
-      )
+      .where("Reservation.id", "=", deleteReservationConfig.id)
       .execute()
       .then(() => true);
   }
@@ -212,67 +225,6 @@ export class KyselyReservationRepository extends ReservationRepository {
       .execute()
       .then((reservations) =>
         reservations.map((reservation) => new Reservation(reservation))
-      );
-  }
-
-  private updateCheckInDate(
-    updateReservationConfig: UpdateReservationConfig
-  ): Promise<Reservation> {
-    return this.kysely
-      .updateTable("Reservation")
-      .set({
-        check_in_date: updateReservationConfig.checkInDate,
-      })
-      .where(
-        "Reservation.external_reference",
-        "=",
-        updateReservationConfig.externalReference
-      )
-      .executeTakeFirst()
-      .then(() =>
-        this.getByExternalReference({
-          externalReference: updateReservationConfig.externalReference,
-        })
-      );
-  }
-  private updateCheckOutDate(
-    updateReservationConfig: UpdateReservationConfig
-  ): Promise<Reservation> {
-    return this.kysely
-      .updateTable("Reservation")
-      .set({
-        check_out_date: updateReservationConfig.checkoutDate,
-      })
-      .where(
-        "Reservation.external_reference",
-        "=",
-        updateReservationConfig.externalReference
-      )
-      .executeTakeFirst()
-      .then(() =>
-        this.getByExternalReference({
-          externalReference: updateReservationConfig.externalReference,
-        })
-      );
-  }
-  private updatePaymentStatus(
-    updateReservationConfig: UpdateReservationConfig
-  ): Promise<Reservation> {
-    return this.kysely
-      .updateTable("Reservation")
-      .set({
-        payment_status: updateReservationConfig.paymentStatus,
-      })
-      .where(
-        "Reservation.external_reference",
-        "=",
-        updateReservationConfig.externalReference
-      )
-      .executeTakeFirst()
-      .then(() =>
-        this.getByExternalReference({
-          externalReference: updateReservationConfig.externalReference,
-        })
       );
   }
 }

@@ -21,12 +21,14 @@ import { ExtraServiceRepository } from "@extraService/repositories/extra-service
 import { ReservationDetailController } from "@reservation/controllers/reservation-detail.controller";
 import { ReservationController } from "@reservation/controllers/reservation.controller";
 import { ReservationDetailRepository } from "@reservation/repositories/reservation-detail.repository";
-import { ReservationRepository } from "@reservation/repositories/reservation.repository";
+import {
+  KyselyReservationRepository,
+  ReservationRepository,
+} from "@reservation/repositories/reservation.repository";
 import { ReservationDetailService } from "@reservation/services/reservation-detail.service";
 import { ReservationService } from "@reservation/services/reservation.service";
-import { LogService } from "./services/log.service";
-import { ExceptionService } from "./services/exception.service";
-import { ErrorResponse } from "./exceptions/error-response";
+import { LogService } from "@shared/services/log.service";
+import { ExceptionService } from "@shared/services/exception.service";
 
 function connectDatabase(databaseConfig: DatabaseConfig) {
   let dialect;
@@ -146,14 +148,42 @@ export class Container {
       return this.props.roomController;
     }
     this.props.roomController = new RoomController(this.roomService);
-    return this.props.guestController;
+    return this.props.roomController;
+  }
+  get reservationRepository() {
+    if (this.props.reservationRepository) {
+      return this.props.reservationRepository;
+    }
+    this.props.reservationRepository = new KyselyReservationRepository(
+      this.database
+    );
+    return this.props.reservationRepository;
+  }
+
+  get reservationService() {
+    if (this.props.reservationService) {
+      return this.props.reservationService;
+    }
+    this.props.reservationService = new ReservationService(
+      this.reservationRepository
+    );
+    return this.props.reservationService;
+  }
+  get reservationController() {
+    if (this.props.reservationController) {
+      return this.props.reservationController;
+    }
+    this.props.reservationController = new ReservationController(
+      this.reservationService
+    );
+    return this.props.reservationController;
   }
 
   get logService() {
     if (this.props.logService) {
       return this.props.logService;
     }
-    this.props.logService = new LogService(this.config.log, {});
+    this.props.logService = new LogService(this.config.log);
     return this.props.logService;
   }
 

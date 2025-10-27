@@ -11,15 +11,15 @@ interface GetGuest {
 }
 
 interface UpdateGuest {
-  phone: string;
+  id: number;
+  phone?: string;
   name?: string;
-  email?: string
-  newPhone?: string;
+  email?: string;
 }
 interface InsertGuest {
   phone: string;
   name: string;
-  email: string
+  email: string;
 }
 
 interface DeleteGuest {
@@ -45,6 +45,4 @@ export class GuestService {
   public delete(deleteGuest: DeleteGuest) {
     return this.guestRepository.delete(deleteGuest);
   }
-
- 
 }

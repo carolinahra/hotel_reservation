@@ -1,10 +1,10 @@
 import { Repository } from "@shared/repositories/repository";
-import { Kysely } from "kysely";
+import { Kysely, Transaction } from "kysely";
 import { Room } from "../models/room";
 import { RoomTable } from "@shared/database-models/room.database-model";
 
 export abstract class RoomRepository extends Repository {
-  abstract get(getRoom: GetRoomConfig): Promise<Room | Room[]>;
+  abstract get(getRoom: GetRoomConfig, transaction?: Transaction<any>): Promise<Room | Room[]>;
   abstract update(updateRoomConfig: UpdateRoomConfig): Promise<Room>;
   abstract insert(insertRoomConfig: InsertRoomConfig): Promise<Room>;
   abstract delete(deleteRoomConfig: DeleteRoomConfig): Promise<boolean>;
@@ -19,6 +19,8 @@ interface GetRoomConfig {
 }
 
 interface UpdateRoomConfig {
+  id: number;
+  sizeId: number;
   name: string;
   availability?: string;
   price?: number;
@@ -31,7 +33,7 @@ interface InsertRoomConfig {
   availability: string;
 }
 interface DeleteRoomConfig {
-  name: string;
+  id: number;
 }
 
 interface GetById {
@@ -43,9 +45,9 @@ export class KyselyRoomRepository extends RoomRepository {
     super();
   }
 
-  public get(getRoom: GetRoomConfig): Promise<Room | Room[]> {
+  public get(getRoom: GetRoomConfig, transaction?: Transaction<RoomTable>): Promise<Room | Room[]> {
     if (getRoom.id) {
-      return this.getById({ id: getRoom.id });
+      return this.getById({ id: getRoom.id }, transaction);
     }
     if (getRoom.name) {
       return this.getByName(getRoom);
@@ -56,12 +58,17 @@ export class KyselyRoomRepository extends RoomRepository {
   }
 
   public update(updateRoomConfig: UpdateRoomConfig): Promise<Room> {
-    if (updateRoomConfig.price) {
-      return this.updatePrice(updateRoomConfig);
-    }
-    if (updateRoomConfig.availability) {
-      return this.updateAvailability(updateRoomConfig);
-    }
+    return this.kysely
+      .updateTable("Room")
+      .set({
+        name: updateRoomConfig.name,
+        room_size_id: updateRoomConfig.sizeId,
+        availability: updateRoomConfig.availability,
+        price: updateRoomConfig.price,
+      })
+      .where("Room.name", "=", updateRoomConfig.name)
+      .execute()
+      .then(() => this.getByName({ name: updateRoomConfig.name }));
   }
 
   public insert(insertRoomConfig: InsertRoomConfig): Promise<Room> {
@@ -80,13 +87,13 @@ export class KyselyRoomRepository extends RoomRepository {
   public delete(deleteRoomConfig: DeleteRoomConfig): Promise<boolean> {
     return this.kysely
       .deleteFrom("Room")
-      .where("Room.name", "=", deleteRoomConfig.name)
+      .where("Room.id", "=", deleteRoomConfig.id)
       .executeTakeFirst()
       .then(() => true);
   }
 
-  private getById(config: GetById): Promise<Room> {
-    return this.kysely
+  private getById(config: GetById, transaction?: Transaction<RoomTable>): Promise<Room> {
+    return (transaction || this.kysely)
       .selectFrom("Room")
       .selectAll() //
       .where("Room.id", "=", config.id)
@@ -157,25 +164,5 @@ export class KyselyRoomRepository extends RoomRepository {
             updated_at: room.updated_at,
           })
       );
-  }
-
-  private updatePrice(updateRoomConfig: UpdateRoomConfig) {
-    return this.kysely
-      .updateTable("Room")
-      .set({
-        price: updateRoomConfig.price,
-      })
-      .where("Room.name", "=", updateRoomConfig.name)
-      .execute()
-      .then(() => this.getByName({ name: updateRoomConfig.name }));
-  }
-
-  private updateAvailability(updateRoomConfig: UpdateRoomConfig) {
-    return this.kysely
-      .updateTable("Room")
-      .set({ availability: updateRoomConfig.availability })
-      .where("Room.name", "=", updateRoomConfig.name)
-      .execute()
-      .then(() => this.getByName({ name: updateRoomConfig.name }));
   }
 }

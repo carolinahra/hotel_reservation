@@ -1,30 +1,27 @@
 import { InvalidRequestException } from "@shared/exceptions/invalid-request.exception";
-import {
-  isValidName,
-
-} from "@shared/validation-functions";
+import { isValidId } from "@shared/validation-functions";
 
 export interface DeleteRoomRequest {
-  name: unknown;
+  id: unknown;
 }
 
 function validate(request: DeleteRoomRequest): void {
-  if (request.name && !isValidName(request.name)) {
+  if (request.id && !isValidId(request.id)) {
     throw new InvalidRequestException();
   }
 }
 
 export class DeleteRoomRequestDTO {
-  name: string;
+  id: number;
 
-  constructor(DeleteRoomRequest: { name: string }) {
-    this.name = DeleteRoomRequest.name;
+  constructor(DeleteRoomRequest: { id: number }) {
+    this.id = DeleteRoomRequest.id;
   }
 
   public static fromRequest(request: DeleteRoomRequest): DeleteRoomRequestDTO {
     validate(request);
     return new DeleteRoomRequestDTO({
-      name: request.name == null ? null : String(request.name),
+      id: request.id == null ? null : Number(request.id),
     });
   }
 }

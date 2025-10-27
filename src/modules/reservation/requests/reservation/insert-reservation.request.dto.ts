@@ -8,6 +8,7 @@ import {
 } from "@shared/validation-functions";
 
 interface InsertReservationRequest {
+  id: unknown;
   guestId: unknown;
   externalReference: unknown;
   totalPrice: unknown;
@@ -17,6 +18,9 @@ interface InsertReservationRequest {
 }
 
 function validate(request: InsertReservationRequest) {
+  if (request.id && !isValidId(request.id)) {
+    throw new InvalidRequestException();
+  }
   if (request.guestId && !isValidId(request.guestId)) {
     throw new InvalidRequestException();
   }
@@ -41,6 +45,7 @@ function validate(request: InsertReservationRequest) {
 }
 
 export class InsertReservationRequestDTO {
+  id: number;
   guestId: number;
   externalReference: string;
   totalPrice: number;
@@ -48,6 +53,7 @@ export class InsertReservationRequestDTO {
   checkInDate: string;
   checkOutDate: string;
   constructor(insertReservationRequest: {
+    id: number;
     guestId: number;
     externalReference: string;
     totalPrice: number;
@@ -55,7 +61,10 @@ export class InsertReservationRequestDTO {
     checkInDate: string;
     checkOutDate: string;
   }) {
-    (this.externalReference = insertReservationRequest.externalReference),
+    (this.id = insertReservationRequest.id),
+      (this.guestId = insertReservationRequest.guestId),
+      (this.externalReference = insertReservationRequest.externalReference),
+      (this.totalPrice = insertReservationRequest.totalPrice),
       (this.paymentStatus = insertReservationRequest.paymentStatus),
       (this.checkInDate = insertReservationRequest.checkInDate),
       (this.checkOutDate = insertReservationRequest.checkOutDate);
@@ -66,6 +75,7 @@ export class InsertReservationRequestDTO {
   ): InsertReservationRequestDTO {
     validate(request);
     return new InsertReservationRequestDTO({
+      id: request.id == null ? null : Number(request.id),
       guestId: request.guestId == null ? null : Number(request.guestId),
       externalReference:
         request.externalReference == null

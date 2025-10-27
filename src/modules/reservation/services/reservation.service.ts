@@ -1,5 +1,8 @@
+import { ReservationNotFoundException } from "@reservation/exceptions/reservation/reservation-not-found.exception";
 import { Reservation } from "../models/reservation";
 import { ReservationRepository } from "../repositories/reservation.repository";
+import { Transaction } from "kysely";
+import { ReservationTable } from "@shared/database-models/reservation.database-model";
 
 interface GetReservation {
   id?: number;
@@ -20,31 +23,44 @@ interface InsertReservation {
 }
 
 interface UpdateReservation {
+  id: number;
+  guestId: number;
   externalReference: string;
-  paymentStatus?: string;
-  checkInDate?: string;
-  checkoutDate?: string;
+  totalPrice: number;
+  paymentStatus: string;
+  checkInDate: string;
+  checkOutDate: string;
 }
 
 interface DeleteReservation {
-  externalReference: string;
+  id: number;
 }
 
 export class ReservationService {
   constructor(private readonly reservationRepository: ReservationRepository) {}
 
-  public get(
+  public async get(
     getReservation: GetReservation
   ): Promise<Reservation | Reservation[]> {
-    return this.reservationRepository.get(getReservation);
+    const reservations = await this.reservationRepository.get(getReservation);
+    if (
+      (Array.isArray(reservations) && reservations.length < 1) ||
+      !reservations
+    ) {
+      throw new ReservationNotFoundException();
+    }
+    return reservations;
   }
 
   public update(updateReservation: UpdateReservation): Promise<Reservation> {
     return this.reservationRepository.update(updateReservation);
   }
 
-  public insert(insertReservation: InsertReservation): Promise<Reservation> {
-    return this.reservationRepository.insert(insertReservation);
+  public insert(
+    insertReservation: InsertReservation,
+    transaction?: Transaction<ReservationTable>
+  ): Promise<Reservation> {
+    return this.reservationRepository.insert(insertReservation, transaction);
   }
 
   public delete(deleteReservation: DeleteReservation): Promise<boolean> {
