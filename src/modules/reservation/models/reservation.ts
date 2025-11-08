@@ -1,6 +1,6 @@
 import { ValueObject } from "@shared/value-object";
 
-interface ReservationProps {
+export interface ReservationProps {
   id: number,
   guest_id: number,
   external_reference: string,

@@ -7,18 +7,20 @@
   "type": "commonjs",
   "main": "index.js",
   "scripts": {
-    "build": "tsc",
+    "build": "tsc && tsc-alias",
     "prestart": "npm run build",
     "start": "node --env-file=.env dist/app.js",
     "dev": "ts-node -r tsconfig-paths/register src/app.ts",
     "pretest": "npm run build",
-    "test": "node --test './**/*.test.js'",
-    "test:coverage": "node --test --experimental-test-coverage --test-reporter=lcov --test-reporter-destination=coverage/lcov.info './**/*.test.js'"
+    "test": "node --enable-source-maps --test './**/*.spec.js'",
+    "test:coverage": "node --test --experimental-test-coverage --test-reporter=lcov --test-reporter-destination=coverage/lcov.info './**/*.spec.js'"
   },
   "devDependencies": {
     "@types/express": "^5.0.3",
     "@types/node": "^24.0.0",
+    "@types/uuid": "^10.0.0",
     "ts-node": "^10.9.2",
+    "tsc-alias": "^1.8.16",
     "tsconfig-paths": "^4.2.0",
     "tsx": "^4.20.3",
     "typescript": "^5.9.3"
@@ -29,6 +31,7 @@
     "express": "^5.1.0",
     "kysely": "^0.28.7",
     "mysql2": "^3.14.1",
-    "save-dev": "^0.0.1-security"
+    "save-dev": "^0.0.1-security",
+    "uuid": "^13.0.0"
   }
 }

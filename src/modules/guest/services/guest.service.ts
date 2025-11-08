@@ -3,9 +3,12 @@ import { GuestRepository } from "@guest/repository/guest.repository";
 
 interface GetGuest {
   id?: number;
-  name?: string;
   phone?: string;
   email?: string;
+}
+
+interface GetManyGuest extends GetGuest {
+  name?: string;
   limit?: number;
   offset?: number;
 }
@@ -30,8 +33,15 @@ interface DeleteGuest {
 export class GuestService {
   constructor(private readonly guestRepository: GuestRepository) {}
 
-  public get(getGuest: GetGuest): Promise<Guest | Guest[]> {
-    return this.guestRepository.get(getGuest);
+  public async getOne(getGuest: GetGuest): Promise<Guest> {
+    const guest = await this.guestRepository.get(getGuest);
+    return Array.isArray(guest) ? guest.pop() : guest;
+  }
+
+  public async getMany(getGuest: GetManyGuest): Promise<Guest[]> {
+    const guests = await this.guestRepository.get(getGuest);
+
+    return Array.isArray(guests) ? guests : [guests];
   }
 
   public update(updateGuest: UpdateGuest) {

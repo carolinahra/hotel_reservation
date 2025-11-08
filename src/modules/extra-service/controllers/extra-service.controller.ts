@@ -11,7 +11,10 @@ export class ExtraServiceController {
   public get(
     request: GetExtraServiceRequestDTO
   ): Promise<ExtraService | ExtraService[]> {
-    return this.service.get(request);
+    if (request.id || request.name) {
+      return this.service.getOne(request);
+    }
+    return this.service.getMany(request);
   }
   public update(request: UpdateExtraServiceRequestDTO): Promise<ExtraService> {
     return this.service.update(request);

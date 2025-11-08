@@ -12,8 +12,11 @@ export class GuestController {
     private readonly exceptionService: ExceptionService
   ) {}
   public get(request: GetGuestRequestDTO) {
+    if (request.id || request.phone || request.email) {
+      return this.guestService.getOne(request);
+    }
     return this.guestService
-      .get(request)
+      .getMany(request)
       .catch((error) => this.exceptionService.handle(error));
   }
 

@@ -1,41 +1,112 @@
 import { ExtraServiceService } from "@extraService/services/extra-service.service";
 import { GuestNotFoundException } from "@guest/exceptions/guest-not-found-exception";
 import { GuestService } from "@guest/services/guest.service";
+import { Reservation } from "@reservation/models/reservation";
 import { ReservationDetailService } from "@reservation/services/reservation-detail.service";
+import { ReservationService } from "@reservation/services/reservation.service";
+import { RoomANotAvailableException } from "@room/exceptions/room/room-not-available.exception";
 import { RoomNotFoundException } from "@room/exceptions/room/room-not-found-exception";
 import { RoomService } from "@room/services/room.service";
+import { Kysely } from "kysely";
+import { v4 as uuidv4 } from "uuid";
 interface ExtraServiceProps {
-    roomId: number;
-    extraServiceId: number;
+  roomId: number;
+  extraServiceId: number;
 }
 
 interface BookingProps {
   guestId: number;
   roomsId: number[];
   extraServices?: ExtraServiceProps[];
+  checkInDate: string;
+  checkOutDate: string;
 }
 
 export class BookingService {
-  constructor( 
+  constructor(
+    private readonly kysely: Kysely<any>,
     private readonly guestService: GuestService,
     private readonly roomService: RoomService,
     private readonly extraServiceService: ExtraServiceService,
+    private readonly reservationService: ReservationService,
     private readonly reservationDetailService: ReservationDetailService
   ) {}
 
   // TODO: Test
 
-  public async handleReservation(props: BookingProps) {
-    const guest = await this.guestService.get({ id: props.guestId });
+  public async handleReservation(props: BookingProps): Promise<Reservation> {
+    const guest = await this.guestService.getOne({ id: props.guestId });
     if (!guest) {
-        throw new GuestNotFoundException();
+      throw new GuestNotFoundException();
     }
-    const rooms = await props.roomsId.map((roomId) => this.roomService.get({id: roomId}));
-    if (!rooms.length) {
-        throw new RoomNotFoundException();
+    const rooms = await Promise.all(
+      props.roomsId.map((roomId) => this.roomService.getOne({ id: roomId }))
+    );
+    if (rooms.some((room) => !room)) {
+      throw new RoomNotFoundException();
+    }
+    for (const room of rooms) {
+      const isBookedRoom = await this.roomService.isBookedRoom({
+        roomId: room.id,
+        checkInDate: props.checkInDate,
+        checkOutDate: props.checkOutDate,
+      });
+      if (isBookedRoom) {
+        throw new RoomANotAvailableException();
+      }
     }
 
+    const extraServices = await Promise.all(
+      props.extraServices?.map((extraService) =>
+        this.extraServiceService.getOne({
+          id: extraService.extraServiceId,
+        })
+      )
+    );
+    const checkIn = new Date(props.checkInDate);
+    const checkOut = new Date(props.checkOutDate);
+    const totalDays =
+      checkOut.getTime() - checkIn.getTime() / (1000 * 60 * 60 * 24);
+    const roomsPrices = rooms.reduce(
+      (roomPrice, room) => roomPrice + room.price,
+      0
+    );
+
+    const extraServicesPrice = extraServices.reduce(
+      (extraServicePrices, extraService) =>
+        extraServicePrices + extraService.price,
+      0
+    );
+
+    const totalPrice = roomsPrices + extraServicesPrice * totalDays;
+    const externalReference = uuidv4();
+
+    const createdReservation = await this.kysely
+      .transaction()
+      .execute(async (transaction) => {
+        const reservation = await this.reservationService.insert(
+          {
+            guestId: guest.id,
+            checkInDate: props.checkInDate,
+            checkOutDate: props.checkOutDate,
+            externalReference,
+            paymentStatus: "pending",
+            totalPrice,
+          },
+          transaction
+        );
+        for (const reservationDetailProp of props?.extraServices) {
+          this.reservationDetailService.insert(
+            {
+              reservationId: reservation.id,
+              extraServiceId: reservationDetailProp.extraServiceId,
+              roomId: reservationDetailProp.roomId,
+            },
+            transaction
+          );
+        }
+        return reservation;
+      });
+    return createdReservation;
   }
-
-  
 }

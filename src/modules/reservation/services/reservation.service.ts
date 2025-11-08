@@ -39,6 +39,9 @@ interface DeleteReservation {
 export class ReservationService {
   constructor(private readonly reservationRepository: ReservationRepository) {}
 
+  public async get(config: { externalReference }): Promise<Reservation>;
+  public async get(config: { id }): Promise<Reservation>;
+  public get(config): Promise<Reservation[]>;
   public async get(
     getReservation: GetReservation
   ): Promise<Reservation | Reservation[]> {

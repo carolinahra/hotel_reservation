@@ -39,7 +39,8 @@ export abstract class ReservationDetailRepository extends Repository {
     updateReservationDetailConfig: UpdateReservationDetailConfig
   ): Promise<ReservationDetail>;
   abstract insert(
-    insertReservationDetailConfig: InsertReservationDetailConfig
+    insertReservationDetailConfig: InsertReservationDetailConfig,
+    transaction?: Transaction<ReservationDetailTable>
   ): Promise<ReservationDetail>;
   abstract delete(
     deleteReservationDetailConfig: DeleteReservationDetailConfig
@@ -71,9 +72,10 @@ export class KyselyReservationDetailRepository extends ReservationDetailReposito
   }
 
   public insert(
-    insertReservationDetailConfig: InsertReservationDetailConfig
+    insertReservationDetailConfig: InsertReservationDetailConfig,
+    transaction?: Transaction<ReservationDetailTable>
   ): Promise<ReservationDetail> {
-    return this.kysely
+    return (transaction || this.kysely)
       .insertInto("Reservation_Detail")
       .values({
         reservation_id: insertReservationDetailConfig.reservationId,
@@ -94,7 +96,10 @@ export class KyselyReservationDetailRepository extends ReservationDetailReposito
       .then(() => true);
   }
 
-  private getById(config: GetByIdConfig, transaction?: Transaction<ReservationDetailTable>) {
+  private getById(
+    config: GetByIdConfig,
+    transaction?: Transaction<ReservationDetailTable>
+  ) {
     return (transaction || this.kysely)
       .selectFrom("Reservation_Detail")
       .selectAll()

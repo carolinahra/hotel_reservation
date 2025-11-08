@@ -1,7 +1,7 @@
+import { Reservation } from "@reservation/models/reservation";
 import { ReservationTable } from "@shared/database-models/reservation.database-model";
 import { Repository } from "@shared/repositories/repository";
-import { Kysely, Transaction } from "kysely";
-import { Reservation } from "../models/reservation";
+import { Kysely, Transaction, TransactionBuilder } from "kysely";
 
 interface GetReservationConfig {
   id?: number;
@@ -56,6 +56,10 @@ export abstract class ReservationRepository extends Repository {
 export class KyselyReservationRepository extends ReservationRepository {
   constructor(private readonly kysely: Kysely<ReservationTable>) {
     super();
+  }
+
+  public getTransaction(): TransactionBuilder<ReservationTable> {
+    return this.kysely.transaction();
   }
 
   public get(

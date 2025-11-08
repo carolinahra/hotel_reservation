@@ -1,5 +1,5 @@
 import { ValueObject } from "@shared/value-object";
-interface ExtraServiceProps {
+export interface ExtraServiceProps {
   id: number;
   name: string;
   price: number;

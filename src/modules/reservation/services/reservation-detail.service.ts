@@ -39,9 +39,10 @@ export class ReservationDetailService {
     return this.repository.update(updateReservationDetail);
   }
   public insert(
-    insertReservationDetail: InsertReservationDetail
+    insertReservationDetail: InsertReservationDetail,
+    transaction?: Transaction<ReservationDetailTable>
   ): Promise<ReservationDetail> {
-    return this.repository.insert(insertReservationDetail);
+    return this.repository.insert(insertReservationDetail, transaction);
   }
   public delete(
     deleteReservationDetail: DeleteReservationDetail

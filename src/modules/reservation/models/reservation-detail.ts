@@ -1,5 +1,5 @@
 import { ValueObject } from "@shared/value-object";
-interface ReservationDetailProps {
+export interface ReservationDetailProps {
   id: number;
   reservation_id: number;
   room_id: number;

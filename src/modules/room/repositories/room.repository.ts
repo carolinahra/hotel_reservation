@@ -2,13 +2,24 @@ import { Repository } from "@shared/repositories/repository";
 import { Kysely, Transaction } from "kysely";
 import { Room } from "../models/room";
 import { RoomTable } from "@shared/database-models/room.database-model";
+import { ReservationDetailTable } from "@shared/database-models/reservation-detail.databasemodel";
+import { ReservationTable } from "@shared/database-models/reservation.database-model";
 
 export abstract class RoomRepository extends Repository {
-  abstract get(getRoom: GetRoomConfig, transaction?: Transaction<any>): Promise<Room | Room[]>;
+  abstract get(
+    getRoom: GetRoomConfig,
+    transaction?: Transaction<any>
+  ): Promise<Room | Room[]>;
   abstract update(updateRoomConfig: UpdateRoomConfig): Promise<Room>;
   abstract insert(insertRoomConfig: InsertRoomConfig): Promise<Room>;
   abstract delete(deleteRoomConfig: DeleteRoomConfig): Promise<boolean>;
+  abstract isBookedRoom(isBookedRoomConfig: IsBookedRoomConfig): Promise<boolean>;
 }
+
+interface Database
+  extends RoomTable,
+    ReservationDetailTable,
+    ReservationTable {}
 
 interface GetRoomConfig {
   id?: number;
@@ -40,12 +51,21 @@ interface GetById {
   id: number;
 }
 
+interface IsBookedRoomConfig {
+  roomId: number;
+  checkInDate: string;
+  checkOutDate: string;
+}
+
 export class KyselyRoomRepository extends RoomRepository {
-  constructor(private readonly kysely: Kysely<RoomTable>) {
+  constructor(private readonly kysely: Kysely<Database>) {
     super();
   }
 
-  public get(getRoom: GetRoomConfig, transaction?: Transaction<RoomTable>): Promise<Room | Room[]> {
+  public get(
+    getRoom: GetRoomConfig,
+    transaction?: Transaction<Database>
+  ): Promise<Room | Room[]> {
     if (getRoom.id) {
       return this.getById({ id: getRoom.id }, transaction);
     }
@@ -55,6 +75,21 @@ export class KyselyRoomRepository extends RoomRepository {
     if (getRoom.limit != null && getRoom.offset != null) {
       return this.getAll(getRoom);
     }
+  }
+
+  public isBookedRoom(config: IsBookedRoomConfig): Promise<boolean> {
+    return this.kysely
+      .selectFrom("Room as r")
+      .innerJoin("Reservation_Detail as rd", "r.id", "rd.room_id")
+      .innerJoin("Reservation as re", "rd.reservation_id", "re.id")
+      .selectAll()
+      .where("r.id", "=", config.roomId)
+      .where("re.check_in_date", ">=", config.checkInDate)
+      .where("re.check_in_date", "<=", config.checkOutDate)
+      .where("re.check_out_date", ">=", config.checkInDate)
+      .where("re.check_out_date", "<=", config.checkOutDate)
+      .executeTakeFirst()
+      .then((result) => result !== undefined);
   }
 
   public update(updateRoomConfig: UpdateRoomConfig): Promise<Room> {
@@ -92,7 +127,10 @@ export class KyselyRoomRepository extends RoomRepository {
       .then(() => true);
   }
 
-  private getById(config: GetById, transaction?: Transaction<RoomTable>): Promise<Room> {
+  private getById(
+    config: GetById,
+    transaction?: Transaction<Database>
+  ): Promise<Room> {
     return (transaction || this.kysely)
       .selectFrom("Room")
       .selectAll() //

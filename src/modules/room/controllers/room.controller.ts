@@ -9,7 +9,10 @@ export class RoomController {
   constructor(private readonly roomService: RoomService) {}
 
   public get(request: GetRoomRequestDTO): Promise<Room | Room[]> {
-    return this.roomService.get(request);
+    if (request.id || request.name) {
+      return this.roomService.getOne(request);
+    }
+    return this.roomService.getMany(request);
   }
   public update(request: UpdateRoomRequestDTO): Promise<Room> {
     return this.roomService.update(request);

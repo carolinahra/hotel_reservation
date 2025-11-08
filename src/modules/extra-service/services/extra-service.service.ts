@@ -1,10 +1,12 @@
-import { ExtraServiceTable } from "@shared/database-models/extra-service.database-model";
+import { ExtraServiceRepository } from "@extraService/repositories/extra-service.repository";
 import { ExtraService } from "../models/extra-service";
-import { Transaction } from "kysely";
 
 interface GetExtraService {
   id?: number;
   name?: string;
+}
+
+interface GetManyExtraServices extends GetExtraService {
   price?: number;
   limit?: number;
   offset?: number;
@@ -25,12 +27,16 @@ interface DeleteExtraService {
 }
 
 export class ExtraServiceService {
-  constructor(private readonly repository: ExtraServiceService) {}
-
-  public get(
-    getExtraService: GetExtraService, transaction?: Transaction<ExtraServiceTable>
-  ): Promise<ExtraService | ExtraService[]> {
-    return this.repository.get(getExtraService, transaction);
+  constructor(private readonly repository: ExtraServiceRepository) {}
+  public async getOne(getExtraService: GetExtraService): Promise<ExtraService> {
+    const extraService = await this.repository.get(getExtraService);
+    return Array.isArray(extraService) ? extraService.pop() : extraService;
+  }
+  public async getMany(
+    getExtraService: GetExtraService
+  ): Promise<ExtraService[]> {
+    const extraServices = await this.repository.get(getExtraService);
+    return Array.isArray(extraServices) ? extraServices : [extraServices];
   }
   public update(updateExtraService: UpdateExtraService): Promise<ExtraService> {
     return this.repository.update(updateExtraService);

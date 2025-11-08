@@ -1,4 +1,4 @@
-import { Kysely, Transaction } from "kysely";
+import { Kysely, Transaction, TransactionBuilder } from "kysely";
 import { Repository } from "@shared/repositories/repository";
 import { GuestTable } from "@shared/database-models/guest.database-model";
 import { Guest } from "../models/guest";
@@ -42,6 +42,10 @@ export abstract class GuestRepository extends Repository {
 export class KyselyGuestRepository extends GuestRepository {
   constructor(private readonly kysely: Kysely<GuestTable>) {
     super();
+  }
+
+  public getTransaction(): TransactionBuilder<GuestTable> {
+    return this.kysely.transaction();
   }
 
   public get(getGuest: GetGuestConfig, transaction?: Transaction<GuestTable>): Promise<Guest | Guest[]> {
@@ -165,4 +169,5 @@ export class KyselyGuestRepository extends GuestRepository {
           })
       );
   }
+
 }
