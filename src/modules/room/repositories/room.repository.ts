@@ -84,10 +84,10 @@ export class KyselyRoomRepository extends RoomRepository {
       .innerJoin("Reservation as re", "rd.reservation_id", "re.id")
       .selectAll()
       .where("r.id", "=", config.roomId)
-      .where("re.check_in_date", ">=", config.checkInDate)
-      .where("re.check_in_date", "<=", config.checkOutDate)
-      .where("re.check_out_date", ">=", config.checkInDate)
-      .where("re.check_out_date", "<=", config.checkOutDate)
+      .where("re.check_in_at", ">=", config.checkInDate)
+      .where("re.check_in_at", "<=", config.checkOutDate)
+      .where("re.check_out_at", ">=", config.checkInDate)
+      .where("re.check_out_at", "<=", config.checkOutDate)
       .executeTakeFirst()
       .then((result) => result !== undefined);
   }
@@ -142,7 +142,7 @@ export class KyselyRoomRepository extends RoomRepository {
             id: room.id,
             name: room.name,
             room_size_id: room.room_size_id,
-            price: room.price,
+            price: Number(room.price),
             availability: room.availability,
             created_at: room.created_at,
             updated_at: room.updated_at,

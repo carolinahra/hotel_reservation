@@ -1,5 +1,23 @@
+import { ExtraServiceBookingProps } from "./requests/booking.request.dto";
+
 export function isValidId(id): boolean {
   return id && typeof id === "number";
+}
+
+export function areValidIds(ids): boolean {
+  return Array.isArray(ids) && ids.length > 0 && ids.every(isValidId);
+}
+
+export function areValidExtraServices(
+  extraServices: ExtraServiceBookingProps[]
+): boolean {
+  return (
+    Array.isArray(extraServices) &&
+    extraServices.every(
+      (extraService) =>
+        isValidId(extraService.roomId) && isValidId(extraService.extraServiceId)
+    )
+  );
 }
 
 export function isValidName(name): boolean {

@@ -16,6 +16,8 @@ import { DeleteReservationRequestDTO } from "@reservation/requests/reservation/d
 import { GetReservationRequestDTO } from "@reservation/requests/reservation/get-reservation.request.dto";
 import { InsertReservationRequestDTO } from "@reservation/requests/reservation/insert-reservation.request.dto";
 import { UpdateReservationRequestDTO } from "@reservation/requests/reservation/update-reservation.request.dto";
+import { BookingRequestDTO } from "@shared/requests/booking.request.dto";
+import { GetExtraServiceRequestDTO } from "@extraService/requests/get-extra-service.request.dto";
 
 const app = express();
 const port = 3000;
@@ -269,6 +271,50 @@ app.delete("/reservations", (req, res) => {
     console.log(error);
     res.send(exceptionService.handle(error));
   });
+});
+
+const extraServiceController = container.extraServiceController;
+
+app.get("/extra-services", (req, res) => {
+  const request = GetExtraServiceRequestDTO.fromRequest({
+    id: req.query.id,
+    name: req.query.name,
+    price: req.query.price,
+    limit: req.query.limit,
+    offset: req.query.offset,
+  });
+  extraServiceController
+    .get(request)
+    .then((extraServices) =>
+      res.send(
+        Array.isArray(extraServices)
+          ? extraServices.map((extraService) => extraService.toPrimitives())
+          : extraServices.toPrimitives()
+      )
+    )
+    .catch((error) => {
+      console.log(error);
+      res.send(exceptionService.handle(error));
+    });
+});
+
+const bookingController = container.bookingController;
+
+app.post("/booking", (req, res) => {
+  const request = BookingRequestDTO.fromRequest({
+    guestId: req.body.guestId,
+    roomsId: req.body.roomsId,
+    extraServices: req.body.extraServices,
+    checkInDate: req.body.checkInDate,
+    checkOutDate: req.body.checkOutDate,
+  });
+  bookingController
+    .handle(request)
+    .then((reservation) => reservation.toPrimitives())
+    .catch((error) => {
+      console.log(error);
+      res.send(exceptionService.handle(error));
+    });
 });
 
 app.listen(port, () => {

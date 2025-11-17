@@ -1,4 +1,4 @@
-import { describe, it } from "node:test";
+import { describe, it, mock } from "node:test";
 import { BookingService } from "./booking.service";
 import {
   DummyDriver,
@@ -22,7 +22,10 @@ import {
 import { Reservation, ReservationProps } from "@reservation/models/reservation";
 import { GuestRepository } from "@guest/repository/guest.repository";
 import { RoomRepository } from "@room/repositories/room.repository";
-import { ReservationRepository } from "@reservation/repositories/reservation.repository";
+import {
+  InsertReservationConfig,
+  ReservationRepository,
+} from "@reservation/repositories/reservation.repository";
 import { ExtraServiceRepository } from "@extraService/repositories/extra-service.repository";
 import { ReservationDetailRepository } from "@reservation/repositories/reservation-detail.repository";
 import {
@@ -32,6 +35,9 @@ import {
 import assert from "assert";
 import { Pool } from "mysql2";
 import { PoolConnection } from "node_modules/mysql2/typings/mysql/lib/PoolConnection";
+import { GuestNotFoundException } from "@guest/exceptions/guest-not-found-exception";
+import { RoomANotAvailableException } from "@room/exceptions/room/room-not-available.exception";
+
 const fakeRoomsProps: RoomProps[] = [
   {
     id: 1,
@@ -70,10 +76,10 @@ const fakeReservationProps: ReservationProps = {
   id: 1,
   guest_id: 1,
   external_reference: "64y3uhjbend",
-  total_price: 500,
+  total_price: 1080,
   payment_status: "pending",
-  check_in_date: "2025-12-20",
-  check_out_date: "2025-12-24",
+  check_in_at: "2025-12-20",
+  check_out_at: "2025-12-24",
   created_at: "2025-10-28",
   updated_at: "2025-10-28",
 };
@@ -185,13 +191,16 @@ class RoomRepositoryMock extends RoomRepository {
   }
 }
 
-function getRoomService(rooms: RoomProps[]) {
+function getRoomService(rooms: RoomProps[], isBookedRoom: boolean) {
   let counter = 0;
   return class RoomServiceMock extends RoomService {
     override async getOne() {
       const room = new Room(rooms[counter]);
       counter++;
       return room;
+    }
+    override isBookedRoom(): Promise<boolean> {
+      return Promise.resolve(isBookedRoom);
     }
   };
 }
@@ -213,9 +222,7 @@ class ReservationRepositoryMock extends ReservationRepository {
 
 function getReservationService(returnValue: any) {
   return class ReservationServiceMock extends ReservationService {
-    insert(): Promise<Reservation> {
-      return Promise.resolve(returnValue);
-    }
+    insert = mock.fn(() => Promise.resolve(returnValue));
   };
 }
 
@@ -264,12 +271,113 @@ function getReservationDetailService(returnValue: any) {
 }
 
 describe("Booking Service", () => {
-  let bookingService: BookingService;
-
   it("should return a Reservation Object", () => {
     const kyselyMock = new KyselyMock();
     const roomRepositoryMock = new RoomRepositoryMock();
-    const roomServiceMock = new (getRoomService(fakeRoomsProps))(
+    const roomServiceMock = new (getRoomService(fakeRoomsProps, false))(
+      roomRepositoryMock
+    );
+
+    const mockGuestRepository = new GuestRepositoryMock();
+    const mockGuestService = new (getGuestService(fakeGuest))(
+      mockGuestRepository
+    );
+
+    const reservationRepositoryMock = new ReservationRepositoryMock();
+    const reservationServiceMock = new (getReservationService(fakeReservation))(
+      reservationRepositoryMock
+    );
+    const extraServiceRepositoryMock = new ExtraServiceRepositoryMock();
+    const extraServiceServiceMock = new (getExtraServiceService(
+      fakeExtraService
+    ))(extraServiceRepositoryMock);
+
+    const reservationDetailRepositoryMock =
+      new ReservationDetailRepositoryMock();
+    const reservationDetailServiceMock = new (getReservationDetailService(
+      fakeReservationDetail
+    ))(reservationDetailRepositoryMock);
+
+    const bookingService = new BookingService(
+      kyselyMock,
+      mockGuestService,
+      roomServiceMock,
+      extraServiceServiceMock,
+      reservationServiceMock,
+      reservationDetailServiceMock
+    );
+
+    return bookingService
+      .handleReservation(fakeBookingProps)
+      .then((reservation) => {
+        const reservationArgs =
+          reservationServiceMock.insert.mock.calls.pop().arguments;
+        const insertReservationProps: InsertReservationConfig =
+          reservationArgs.shift();
+
+        assert.deepEqual(
+          {
+            guest_id: insertReservationProps.guestId,
+            total_price: insertReservationProps.totalPrice,
+            payment_status: insertReservationProps.paymentStatus,
+            check_in_at: insertReservationProps.checkInDate,
+            check_out_at: insertReservationProps.checkOutDate,
+          },
+           {
+            guest_id: fakeReservationProps.guest_id,
+            total_price: fakeReservationProps.total_price,
+            payment_status: fakeReservationProps.payment_status,
+            check_in_at: fakeReservationProps.check_in_at,
+            check_out_at: fakeReservationProps.check_out_at,
+          },
+        );
+      });
+  });
+
+  it("should throw a GuessNotFoundError", async () => {
+    const kyselyMock = new KyselyMock();
+    const roomRepositoryMock = new RoomRepositoryMock();
+    const roomServiceMock = new (getRoomService(fakeRoomsProps, false))(
+      roomRepositoryMock
+    );
+
+    const mockGuestRepository = new GuestRepositoryMock();
+    const mockGuestService = new (getGuestService(null))(mockGuestRepository);
+
+    const reservationRepositoryMock = new ReservationRepositoryMock();
+    const reservationServiceMock = new (getReservationService(fakeReservation))(
+      reservationRepositoryMock
+    );
+
+    const extraServiceRepositoryMock = new ExtraServiceRepositoryMock();
+    const extraServiceServiceMock = new (getExtraServiceService(
+      fakeExtraService
+    ))(extraServiceRepositoryMock);
+
+    const reservationDetailRepositoryMock =
+      new ReservationDetailRepositoryMock();
+    const reservationDetailServiceMock = new (getReservationDetailService(
+      fakeReservationDetail
+    ))(reservationDetailRepositoryMock);
+
+    const bookingService = new BookingService(
+      kyselyMock,
+      mockGuestService,
+      roomServiceMock,
+      extraServiceServiceMock,
+      reservationServiceMock,
+      reservationDetailServiceMock
+    );
+    await assert.rejects(
+      () => bookingService.handleReservation(fakeBookingProps),
+      GuestNotFoundException
+    );
+  });
+
+  it("should throw a RoomNotAvailable", async () => {
+    const kyselyMock = new KyselyMock();
+    const roomRepositoryMock = new RoomRepositoryMock();
+    const roomServiceMock = new (getRoomService(fakeRoomsProps, true))(
       roomRepositoryMock
     );
 
@@ -294,7 +402,7 @@ describe("Booking Service", () => {
       fakeReservationDetail
     ))(reservationDetailRepositoryMock);
 
-    bookingService = new BookingService(
+    const bookingService = new BookingService(
       kyselyMock,
       mockGuestService,
       roomServiceMock,
@@ -302,47 +410,9 @@ describe("Booking Service", () => {
       reservationServiceMock,
       reservationDetailServiceMock
     );
-
-    return bookingService
-      .handleReservation(fakeBookingProps)
-      .then((reservation) => assert.deepEqual(reservation, fakeReservation));
-  });
-
-  it("should throw a GuessNotFoundError", () => {
-    const kyselyMock = new KyselyMock();
-    const roomRepositoryMock = new RoomRepositoryMock();
-    const roomServiceMock = new (getRoomService(fakeRoomsProps))(
-      roomRepositoryMock
-    );
-
-    const mockGuestRepository = new GuestRepositoryMock();
-    const mockGuestService = new (getGuestService(null))(
-      mockGuestRepository
-    );
-
-    const reservationRepositoryMock = new ReservationRepositoryMock();
-    const reservationServiceMock = new (getReservationService(fakeReservation))(
-      reservationRepositoryMock
-    );
-
-    const extraServiceRepositoryMock = new ExtraServiceRepositoryMock();
-    const extraServiceServiceMock = new (getExtraServiceService(
-      fakeExtraService
-    ))(extraServiceRepositoryMock);
-
-    const reservationDetailRepositoryMock =
-      new ReservationDetailRepositoryMock();
-    const reservationDetailServiceMock = new (getReservationDetailService(
-      fakeReservationDetail
-    ))(reservationDetailRepositoryMock);
-
-    bookingService = new BookingService(
-      kyselyMock,
-      mockGuestService,
-      roomServiceMock,
-      extraServiceServiceMock,
-      reservationServiceMock,
-      reservationDetailServiceMock
+    await assert.rejects(
+      () => bookingService.handleReservation(fakeBookingProps),
+      RoomANotAvailableException
     );
   });
 });

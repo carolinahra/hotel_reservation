@@ -12,7 +12,7 @@ interface GetReservationConfig {
   offset?: number;
 }
 
-interface InsertReservationConfig {
+export interface InsertReservationConfig {
   guestId: number;
   externalReference: string;
   totalPrice: number;
@@ -46,7 +46,8 @@ export abstract class ReservationRepository extends Repository {
     updateReservationConfig: UpdateReservationConfig
   ): Promise<Reservation>;
   abstract insert(
-    insertReservationConfig: InsertReservationConfig, transaction?: Transaction<any> 
+    insertReservationConfig: InsertReservationConfig,
+    transaction?: Transaction<any>
   ): Promise<Reservation>;
   abstract delete(
     deleteReservationConfig: DeleteReservationConfig
@@ -63,10 +64,11 @@ export class KyselyReservationRepository extends ReservationRepository {
   }
 
   public get(
-    getReservationConfig: GetReservationConfig
+    getReservationConfig: GetReservationConfig,
+    transaction?: Transaction<ReservationTable>
   ): Promise<Reservation | Reservation[]> {
     if (getReservationConfig.id) {
-      return this.getById({ id: getReservationConfig.id });
+      return this.getById({ id: getReservationConfig.id }, transaction);
     }
     if (getReservationConfig.externalReference) {
       return this.getByExternalReference(getReservationConfig);
@@ -93,8 +95,8 @@ export class KyselyReservationRepository extends ReservationRepository {
         external_reference: updateReservationConfig.externalReference,
         total_price: updateReservationConfig.totalPrice,
         payment_status: updateReservationConfig.paymentStatus,
-        check_in_date: updateReservationConfig.checkInDate,
-        check_out_date: updateReservationConfig.checkOutDate,
+        check_in_at: updateReservationConfig.checkInDate,
+        check_out_at: updateReservationConfig.checkOutDate,
       })
       .where(
         "Reservation.external_reference",
@@ -120,12 +122,11 @@ export class KyselyReservationRepository extends ReservationRepository {
         external_reference: insertReservationConfig.externalReference,
         total_price: insertReservationConfig.totalPrice,
         payment_status: insertReservationConfig.paymentStatus,
-        check_in_date: insertReservationConfig.checkInDate,
-        check_out_date: insertReservationConfig.checkOutDate,
+        check_in_at: insertReservationConfig.checkInDate,
+        check_out_at: insertReservationConfig.checkOutDate,
       })
-
       .executeTakeFirst()
-      .then((result) => this.getById({ id: Number(result.insertId) }));
+      .then((result) => this.getById({ id: Number(result.insertId) }, transaction));
   }
 
   public delete(
@@ -138,26 +139,29 @@ export class KyselyReservationRepository extends ReservationRepository {
       .then(() => true);
   }
 
-  private getById(config: getByIdConfig): Promise<Reservation> {
-    return this.kysely
+  private async getById(
+    config: getByIdConfig,
+    transaction?: Transaction<ReservationTable>
+  ): Promise<Reservation> {
+    const reservation = await (transaction || this.kysely)
       .selectFrom("Reservation")
       .selectAll()
       .where("Reservation.id", "=", config.id)
-      .executeTakeFirst()
-      .then(
-        (reservation) =>
-          new Reservation({
-            id: reservation.id,
-            guest_id: reservation.guest_id,
-            external_reference: reservation.external_reference,
-            payment_status: reservation.payment_status,
-            total_price: reservation.total_price,
-            check_in_date: reservation.check_in_date,
-            check_out_date: reservation.check_out_date,
-            created_at: reservation.created_at,
-            updated_at: reservation.updated_at,
-          })
-      );
+      .executeTakeFirst();
+    if (!reservation) {
+      return null;
+    }
+    return new Reservation({
+      id: reservation.id,
+      guest_id: reservation.guest_id,
+      external_reference: reservation.external_reference,
+      payment_status: reservation.payment_status,
+      total_price: reservation.total_price,
+      check_in_at: reservation.check_in_at,
+      check_out_at: reservation.check_out_at,
+      created_at: reservation.created_at,
+      updated_at: reservation.updated_at,
+    });
   }
 
   private getAll(
@@ -194,8 +198,8 @@ export class KyselyReservationRepository extends ReservationRepository {
             external_reference: reservation.external_reference,
             payment_status: reservation.payment_status,
             total_price: reservation.total_price,
-            check_in_date: reservation.check_in_date,
-            check_out_date: reservation.check_out_date,
+            check_in_at: reservation.check_in_at,
+            check_out_at: reservation.check_out_at,
             created_at: reservation.created_at,
             updated_at: reservation.updated_at,
           })
@@ -223,7 +227,7 @@ export class KyselyReservationRepository extends ReservationRepository {
     return this.kysely
       .selectFrom("Reservation")
       .selectAll()
-      .where("Reservation.check_in_date", "=", getReservationConfig.checkInDate)
+      .where("Reservation.check_in_at", "=", getReservationConfig.checkInDate)
       .limit(getReservationConfig.limit)
       .offset(getReservationConfig.offset)
       .execute()

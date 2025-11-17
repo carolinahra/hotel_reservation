@@ -17,10 +17,16 @@ import { RoomSizeService } from "@room/services/room-size.service";
 import { RoomService } from "@room/services/room.service";
 import { ExtraServiceService } from "@extraService/services/extra-service.service";
 import { ExtraServiceController } from "@extraService/controllers/extra-service.controller";
-import { ExtraServiceRepository } from "@extraService/repositories/extra-service.repository";
+import {
+  ExtraServiceRepository,
+  KyselyExtraServiceRepository,
+} from "@extraService/repositories/extra-service.repository";
 import { ReservationDetailController } from "@reservation/controllers/reservation-detail.controller";
 import { ReservationController } from "@reservation/controllers/reservation.controller";
-import { ReservationDetailRepository } from "@reservation/repositories/reservation-detail.repository";
+import {
+  KyselyReservationDetailRepository,
+  ReservationDetailRepository,
+} from "@reservation/repositories/reservation-detail.repository";
 import {
   KyselyReservationRepository,
   ReservationRepository,
@@ -29,6 +35,8 @@ import { ReservationDetailService } from "@reservation/services/reservation-deta
 import { ReservationService } from "@reservation/services/reservation.service";
 import { LogService } from "@shared/services/log.service";
 import { ExceptionService } from "@shared/services/exception.service";
+import { BookingService } from "./services/booking.service";
+import { BookingController } from "./controllers/booking.controller";
 
 function connectDatabase(databaseConfig: DatabaseConfig) {
   let dialect;
@@ -71,6 +79,8 @@ interface ContainerProps {
   extraServiceController?: ExtraServiceController;
   logService?: LogService;
   exceptionService?: ExceptionService;
+  bookingService?: BookingService;
+  bookingController?: BookingController;
 }
 interface DatabaseConfig {
   driver: "mysql" | "postgre";
@@ -179,6 +189,64 @@ export class Container {
     return this.props.reservationController;
   }
 
+  get reservationDetailRepository() {
+    if (this.props.reservationDetailRepository) {
+      return this.props.reservationDetailRepository;
+    }
+    this.props.reservationDetailRepository =
+      new KyselyReservationDetailRepository(this.database);
+    return this.props.reservationDetailRepository;
+  }
+
+  get reservationDetailService() {
+    if (this.props.reservationDetailService) {
+      return this.props.reservationDetailService;
+    }
+    this.props.reservationDetailService = new ReservationDetailService(
+      this.reservationDetailRepository
+    );
+    return this.props.reservationDetailService;
+  }
+  get reservationDetailController() {
+    if (this.props.reservationDetailController) {
+      return this.props.reservationDetailController;
+    }
+    this.props.reservationDetailController = new ReservationDetailController(
+      this.reservationDetailService
+    );
+    return this.props.reservationDetailController;
+  }
+
+  get extraServiceRepository() {
+    if (this.props.extraServiceRepository) {
+      return this.props.extraServiceRepository;
+    }
+    this.props.extraServiceRepository = new KyselyExtraServiceRepository(
+      this.database
+    );
+    return this.props.extraServiceRepository;
+  }
+
+  get extraServiceService() {
+    if (this.props.extraServiceService) {
+      return this.props.extraServiceService;
+    }
+    this.props.extraServiceService = new ExtraServiceService(
+      this.extraServiceRepository
+    );
+    return this.props.extraServiceService;
+  }
+
+  get extraServiceController() {
+    if (this.props.extraServiceController) {
+      return this.props.extraServiceController;
+    }
+    this.props.extraServiceController = new ExtraServiceController(
+      this.extraServiceService
+    );
+    return this.props.extraServiceController;
+  }
+
   get logService() {
     if (this.props.logService) {
       return this.props.logService;
@@ -193,5 +261,28 @@ export class Container {
     }
     this.props.exceptionService = new ExceptionService(this.logService);
     return this.props.exceptionService;
+  }
+
+  get bookingService() {
+    if (this.props.bookingService) {
+      return this.props.bookingService;
+    }
+    this.props.bookingService = new BookingService(
+      this.database,
+      this.guestService,
+      this.roomService,
+      this.extraServiceService,
+      this.reservationService,
+      this.reservationDetailService
+    );
+    return this.props.bookingService;
+  }
+
+  get bookingController() {
+    if (this.props.bookingController) {
+      return this.props.bookingController;
+    }
+    this.props.bookingController = new BookingController(this.bookingService);
+    return this.props.bookingController;
   }
 }

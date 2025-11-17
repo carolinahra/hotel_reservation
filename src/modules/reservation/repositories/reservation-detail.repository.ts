@@ -83,7 +83,9 @@ export class KyselyReservationDetailRepository extends ReservationDetailReposito
         extra_service_id: insertReservationDetailConfig.extraServiceId,
       })
       .executeTakeFirst()
-      .then((result) => this.getById({ id: Number(result.insertId) }));
+      .then((result) =>
+        this.getById({ id: Number(result.insertId) }, transaction)
+      );
   }
 
   public delete(

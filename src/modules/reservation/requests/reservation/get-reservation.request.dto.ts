@@ -10,7 +10,8 @@ interface GetReservationRequest {
   id?: unknown;
   externalReference?: unknown;
   guestId?: unknown;
-  checkInDate?: string;
+  checkInDate?: unknown;
+  checkOutDate?: unknown;
   limit?: unknown;
   offset?: unknown;
 }
@@ -23,6 +24,9 @@ function validate(request: GetReservationRequest) {
     throw new InvalidRequestException();
   }
   if (request.checkInDate && !isValidDate(request.checkInDate)) {
+    throw new InvalidRequestException();
+  }
+  if (request.checkOutDate && !isValidDate(request.checkOutDate)) {
     throw new InvalidRequestException();
   }
   if (request.limit && !isValidLimit(request.limit)) {
@@ -38,6 +42,7 @@ export class GetReservationRequestDTO {
   externalReference?: string;
   guestId?: number;
   checkInDate?: string;
+  checkOutDate?: string;
   limit?: number;
   offset?: number;
 
@@ -46,6 +51,7 @@ export class GetReservationRequestDTO {
     externalReference?: string;
     guestId?: number;
     checkInDate?: string;
+    checkOutDate?: string;
     limit?: number;
     offset?: number;
   }) {
@@ -53,6 +59,7 @@ export class GetReservationRequestDTO {
       (this.externalReference = getReservationRequest.externalReference),
       (this.guestId = getReservationRequest.guestId),
       (this.checkInDate = getReservationRequest.checkInDate),
+      (this.checkOutDate = getReservationRequest.checkOutDate),
       (this.limit = getReservationRequest.limit),
       (this.offset = getReservationRequest.offset);
   }
@@ -70,6 +77,8 @@ export class GetReservationRequestDTO {
           : String(request.externalReference),
       checkInDate:
         request.checkInDate == null ? null : String(request.checkInDate),
+      checkOutDate:
+        request.checkOutDate == null ? null : String(request.checkOutDate),
       limit: request.limit == null ? null : Number(request.limit),
       offset: request.offset == null ? null : Number(request.offset),
     });

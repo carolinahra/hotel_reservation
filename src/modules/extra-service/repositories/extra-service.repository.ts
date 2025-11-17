@@ -30,7 +30,8 @@ interface GetById {
 }
 export abstract class ExtraServiceRepository extends Repository {
   abstract get(
-    getExtraService: GetExtraServiceConfig, transaction?: Transaction<any>
+    getExtraService: GetExtraServiceConfig,
+    transaction?: Transaction<any>
   ): Promise<ExtraService | ExtraService[]>;
   abstract update(
     updateExtraServiceConfig: UpdateExtraServiceConfig
@@ -49,7 +50,8 @@ export class KyselyExtraServiceRepository extends ExtraServiceRepository {
   }
 
   public get(
-    getExtraService: GetExtraServiceConfig, transaction?: Transaction<ExtraServiceTable>
+    getExtraService: GetExtraServiceConfig,
+    transaction?: Transaction<ExtraServiceTable>
   ): Promise<ExtraService | ExtraService[]> {
     if (getExtraService.id) {
       return this.getById({ id: getExtraService.id }, transaction);
@@ -58,7 +60,7 @@ export class KyselyExtraServiceRepository extends ExtraServiceRepository {
       return this.getByName(getExtraService);
     }
     if (getExtraService.price) {
-        return this.getByPrice(getExtraService);
+      return this.getByPrice(getExtraService);
     }
     if (getExtraService.limit != null && getExtraService.offset != null) {
       return this.getAll(getExtraService);
@@ -99,7 +101,10 @@ export class KyselyExtraServiceRepository extends ExtraServiceRepository {
       .then(() => true);
   }
 
-  private getById(config: GetById, transaction?: Transaction<ExtraServiceTable>): Promise<ExtraService> {
+  private getById(
+    config: GetById,
+    transaction?: Transaction<ExtraServiceTable>
+  ): Promise<ExtraService> {
     return (transaction || this.kysely)
       .selectFrom("Extra_Service")
       .selectAll() //
@@ -110,7 +115,7 @@ export class KyselyExtraServiceRepository extends ExtraServiceRepository {
           new ExtraService({
             id: extraService.id,
             name: extraService.name,
-            price: extraService.price,
+            price: Number(extraService.price),
           })
       );
   }
@@ -118,19 +123,22 @@ export class KyselyExtraServiceRepository extends ExtraServiceRepository {
   private getAll(
     getExtraServiceConfig: GetExtraServiceConfig
   ): Promise<ExtraService[]> {
-    return (
-      this.kysely
-        .selectFrom("Extra_Service")
-        .selectAll()
-        .limit(getExtraServiceConfig.limit)
-        .offset(getExtraServiceConfig.offset)
-        .execute()
-        .then((extraServices) => {
-          return extraServices.map(
-            (extraService) => new ExtraService(extraService)
-          );
-        })
-    );
+    return this.kysely
+      .selectFrom("Extra_Service")
+      .selectAll()
+      .limit(getExtraServiceConfig.limit)
+      .offset(getExtraServiceConfig.offset)
+      .execute()
+      .then((extraServices) => {
+        return extraServices.map(
+          (extraService) =>
+            new ExtraService({
+              id: extraService.id,
+              name: extraService.name,
+              price: Number(extraService.price),
+            })
+        );
+      });
   }
 
   private getByName(

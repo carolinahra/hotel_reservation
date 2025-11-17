@@ -22,6 +22,13 @@ interface BookingProps {
   checkOutDate: string;
 }
 
+interface BookingPriceProps {
+  extraServicesIDs: number[];
+  roomsIDs: number[];
+  checkInDate: string;
+  checkOutDate: string;
+}
+
 export class BookingService {
   constructor(
     private readonly kysely: Kysely<any>,
@@ -64,9 +71,12 @@ export class BookingService {
       )
     );
     const checkIn = new Date(props.checkInDate);
+    checkIn.setHours(15, 0, 0, 0);
     const checkOut = new Date(props.checkOutDate);
-    const totalDays =
-      checkOut.getTime() - checkIn.getTime() / (1000 * 60 * 60 * 24);
+    checkOut.setHours(11, 0, 0, 0);
+    const totalDays = Math.ceil(
+      (checkOut.getTime() - checkIn.getTime()) / (1000 * 60 * 60 * 24)
+    );
     const roomsPrices = rooms.reduce(
       (roomPrice, room) => roomPrice + room.price,
       0
@@ -78,7 +88,7 @@ export class BookingService {
       0
     );
 
-    const totalPrice = roomsPrices + extraServicesPrice * totalDays;
+    const totalPrice = (roomsPrices + extraServicesPrice) * totalDays;
     const externalReference = uuidv4();
 
     const createdReservation = await this.kysely
@@ -87,8 +97,8 @@ export class BookingService {
         const reservation = await this.reservationService.insert(
           {
             guestId: guest.id,
-            checkInDate: props.checkInDate,
-            checkOutDate: props.checkOutDate,
+            checkInDate: this.toSqlDateTime(checkIn),
+            checkOutDate: this.toSqlDateTime(checkOut),
             externalReference,
             paymentStatus: "pending",
             totalPrice,
@@ -96,7 +106,7 @@ export class BookingService {
           transaction
         );
         for (const reservationDetailProp of props?.extraServices) {
-          this.reservationDetailService.insert(
+          await this.reservationDetailService.insert(
             {
               reservationId: reservation.id,
               extraServiceId: reservationDetailProp.extraServiceId,
@@ -108,5 +118,45 @@ export class BookingService {
         return reservation;
       });
     return createdReservation;
+  }
+
+  public async getReservationPrice(props: BookingPriceProps): Promise<number> {
+    const checkIn = new Date(props.checkInDate);
+    checkIn.setHours(15, 0, 0, 0);
+    const checkOut = new Date(props.checkOutDate);
+    checkOut.setHours(11, 0, 0, 0);
+    const totalDays = Math.ceil(
+      (checkOut.getTime() - checkIn.getTime()) / (1000 * 60 * 60 * 24)
+    );
+    const rooms = await Promise.all(
+      props.roomsIDs.map((roomID) => this.roomService.getOne({ id: roomID }))
+    );
+    if (rooms.some((room) => !room)) {
+      throw new RoomNotFoundException();
+    }
+    const extraServices = await Promise.all(
+      props.extraServicesIDs?.map((id) =>
+        this.extraServiceService.getOne({
+          id,
+        })
+      )
+    );
+    const roomsPrices = rooms.reduce(
+      (roomPrice, room) => roomPrice + room.price,
+      0
+    );
+
+    const extraServicesPrice = extraServices.reduce(
+      (extraServicePrices, extraService) =>
+        extraServicePrices + extraService.price,
+      0
+    );
+
+    const totalPrice = (roomsPrices + extraServicesPrice) * totalDays;
+    return totalPrice;
+  }
+
+  private toSqlDateTime(date: Date): string {
+    return date.toISOString().slice(0, 19).replace("T", " ");
   }
 }

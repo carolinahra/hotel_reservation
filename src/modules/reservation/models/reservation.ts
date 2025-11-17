@@ -6,8 +6,8 @@ export interface ReservationProps {
   external_reference: string,
   total_price: number,
   payment_status: string,
-  check_in_date: string,
-  check_out_date: string,
+  check_in_at: string,
+  check_out_at: string,
   created_at: string,
   updated_at: string,
 }
@@ -33,12 +33,12 @@ export class Reservation extends ValueObject<ReservationProps> {
     return this.props.payment_status;
   }
 
-  get check_in_date() {
-    return this.props.check_in_date;
+  get check_in_at() {
+    return this.props.check_in_at;
   }
 
-  get check_out_date() {
-    return this.props.check_out_date;
+  get check_out_at() {
+    return this.props.check_out_at;
   }
 
   get created_at() {
@@ -55,8 +55,8 @@ export class Reservation extends ValueObject<ReservationProps> {
       external_reference: this.props.external_reference,
       total_price: this.props.total_price,
       payment_status: this.props.payment_status,
-      check_in_date: this.props.check_in_date,
-      check_out_date: this.props.check_out_date,
+      check_in_at: this.props.check_in_at,
+      check_out_at: this.props.check_out_at,
       created_at: this.props.created_at,
       updated_at: this.props.updated_at,
     };
