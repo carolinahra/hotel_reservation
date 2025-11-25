@@ -7,6 +7,9 @@ import { ReservationTable } from "@shared/database-models/reservation.database-m
 interface GetReservation {
   id?: number;
   externalReference?: string;
+}
+
+interface GetManyReservations extends GetReservation {
   guestId?: number;
   checkInDate?: string;
   limit?: number;
@@ -39,20 +42,15 @@ interface DeleteReservation {
 export class ReservationService {
   constructor(private readonly reservationRepository: ReservationRepository) {}
 
-  public async get(config: { externalReference }): Promise<Reservation>;
-  public async get(config: { id }): Promise<Reservation>;
-  public get(config): Promise<Reservation[]>;
-  public async get(
-    getReservation: GetReservation
-  ): Promise<Reservation | Reservation[]> {
+  public async getOne(getReservation: GetReservation): Promise<Reservation> {
+    const reservation = await this.reservationRepository.get(getReservation);
+    return Array.isArray(reservation) ? reservation.pop() : reservation;
+  }
+  public async getMany(
+    getReservation: GetManyReservations
+  ): Promise<Reservation[]> {
     const reservations = await this.reservationRepository.get(getReservation);
-    if (
-      (Array.isArray(reservations) && reservations.length < 1) ||
-      !reservations
-    ) {
-      throw new ReservationNotFoundException();
-    }
-    return reservations;
+    return Array.isArray(reservations) ? reservations : [reservations];
   }
 
   public update(updateReservation: UpdateReservation): Promise<Reservation> {

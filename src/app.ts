@@ -18,6 +18,7 @@ import { InsertReservationRequestDTO } from "@reservation/requests/reservation/i
 import { UpdateReservationRequestDTO } from "@reservation/requests/reservation/update-reservation.request.dto";
 import { BookingRequestDTO } from "@shared/requests/booking.request.dto";
 import { GetExtraServiceRequestDTO } from "@extraService/requests/get-extra-service.request.dto";
+import { GetBookingPriceRequestDTO } from "@shared/requests/get-booking-price.request.dto";
 
 const app = express();
 const port = 3000;
@@ -45,13 +46,15 @@ app.use((req: Request, res: Response, next: NextFunction) => {
   logService.start();
   logService.collect({ request: req });
 
-  const originalSend = res.send;
+  const originalSend = res.send.bind(res);
   res.send = function (body?: any) {
     logService.collect({ responseBody: body });
-    logService.log();
 
-    return originalSend.call(res, body);
+    return originalSend(body);
   } as typeof originalSend;
+
+  res.on("finish", () => logService.log());
+
   next();
 });
 
@@ -203,7 +206,7 @@ app.get("/reservations", (req, res) => {
     id: req.query.id,
     externalReference: req.query.externalReference,
     guestId: req.query.guestId,
-    checkInDate: String(req.query.checkInDate),
+    checkInDate: req.query.checkInDate,
     limit: req.query.limit,
     offset: req.query.offset,
   });
@@ -300,6 +303,22 @@ app.get("/extra-services", (req, res) => {
 
 const bookingController = container.bookingController;
 
+app.get("/booking", (req, res) => {
+  const request = GetBookingPriceRequestDTO.fromRequest({
+    roomsIDs: req.query.roomsIDs,
+    extraServicesIDs: req.query.extraServicesIDs,
+    checkInDate: req.query.checkInDate,
+    checkOutDate: req.query.checkOutDate,
+  });
+  bookingController
+    .getPrice(request)
+    .then((price) => res.send(price))
+    .catch((error) => {
+      console.log(error);
+      res.send(exceptionService.handle(error));
+    });
+});
+
 app.post("/booking", (req, res) => {
   const request = BookingRequestDTO.fromRequest({
     guestId: req.body.guestId,
@@ -310,7 +329,9 @@ app.post("/booking", (req, res) => {
   });
   bookingController
     .handle(request)
-    .then((reservation) => reservation.toPrimitives())
+    .then((reservation) => {
+      return res.send(reservation.toPrimitives());
+    })
     .catch((error) => {
       console.log(error);
       res.send(exceptionService.handle(error));

@@ -79,7 +79,7 @@ export class KyselyReservationRepository extends ReservationRepository {
     if (getReservationConfig.checkInDate) {
       return this.getByCheckInDate(getReservationConfig);
     }
-    if (getReservationConfig.limit && getReservationConfig.offset) {
+    if (getReservationConfig.limit != null && getReservationConfig.offset != null) {
       return this.getAll(getReservationConfig);
     }
   }
@@ -126,7 +126,9 @@ export class KyselyReservationRepository extends ReservationRepository {
         check_out_at: insertReservationConfig.checkOutDate,
       })
       .executeTakeFirst()
-      .then((result) => this.getById({ id: Number(result.insertId) }, transaction));
+      .then((result) =>
+        this.getById({ id: Number(result.insertId) }, transaction)
+      );
   }
 
   public delete(

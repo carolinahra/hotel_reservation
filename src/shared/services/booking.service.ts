@@ -23,7 +23,7 @@ interface BookingProps {
 }
 
 interface BookingPriceProps {
-  extraServicesIDs: number[];
+  extraServicesIDs?: number[];
   roomsIDs: number[];
   checkInDate: string;
   checkOutDate: string;

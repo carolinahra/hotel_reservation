@@ -11,7 +11,10 @@ export class ReservationController {
   public get(
     request: GetReservationRequestDTO
   ): Promise<Reservation | Reservation[]> {
-    return this.reservationService.get(request);
+    if (request.id || request.externalReference) {
+      return this.reservationService.getOne(request);
+    }
+    return this.reservationService.getMany(request);
   }
 
   public update(request: UpdateReservationRequestDTO): Promise<Reservation> {

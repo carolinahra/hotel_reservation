@@ -1,20 +1,19 @@
 import { InvalidRequestException } from "@shared/exceptions/invalid-request.exception";
-import {
-  areValidExtraServices,
-  areValidIds,
-  isValidDate,
-  isValidId,
-} from "@shared/validation-functions";
+import { areValidIds, isValidDate } from "@shared/validation-functions";
 
 export interface GetBookingPriceRequest {
-  extraServicesIDs: number[];
-  roomsIDs: number[];
-  checkInDate: string;
-  checkOutDate: string;
+  extraServicesIDs?: unknown;
+  roomsIDs: unknown;
+  checkInDate: unknown;
+  checkOutDate: unknown;
 }
 
 function validate(request: GetBookingPriceRequest): void {
-  if (request.extraServicesIDs && !areValidIds(request.extraServicesIDs)) {
+  if (
+    Array.isArray(request.extraServicesIDs) &&
+    request.extraServicesIDs.length > 0 &&
+    !areValidIds(request.extraServicesIDs)
+  ) {
     throw new InvalidRequestException();
   }
 
@@ -30,12 +29,12 @@ function validate(request: GetBookingPriceRequest): void {
 }
 
 export class GetBookingPriceRequestDTO {
-  extraServicesIDs: number[];
+  extraServicesIDs?: number[];
   roomsIDs: number[];
   checkInDate: string;
   checkOutDate: string;
   constructor(InsertRoomRequest: {
-    extraServicesIDs: number[];
+    extraServicesIDs?: number[];
     roomsIDs: number[];
     checkInDate: string;
     checkOutDate: string;
@@ -49,16 +48,24 @@ export class GetBookingPriceRequestDTO {
   public static fromRequest(
     request: GetBookingPriceRequest
   ): GetBookingPriceRequestDTO {
-    validate(request);
+    const roomsIDs =
+      typeof request.roomsIDs === "string" && request.roomsIDs.trim()
+        ? request.roomsIDs.split(",").map((id) => Number(id))
+        : [];
+
+    const extraServicesIDs =
+      typeof request.extraServicesIDs === "string" &&
+      request.extraServicesIDs.trim() !== ""
+        ? request.extraServicesIDs.split(",").map((id) => Number(id))
+        : [];
+    const checkInDate = String(request.checkInDate);
+    const checkOutDate = String(request.checkOutDate);
+    validate({ roomsIDs, extraServicesIDs, checkInDate, checkOutDate });
     return new GetBookingPriceRequestDTO({
-      roomsIDs: request.roomsIDs.map((roomId) => Number(roomId)),
-      extraServicesIDs: request.extraServicesIDs.map((extraServiceID) =>
-        Number(extraServiceID)
-      ),
-      checkInDate:
-        request.checkInDate == null ? null : String(request.checkInDate),
-      checkOutDate:
-        request.checkOutDate == null ? null : String(request.checkOutDate),
+      roomsIDs,
+      extraServicesIDs,
+      checkInDate,
+      checkOutDate,
     });
   }
 }
