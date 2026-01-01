@@ -9,6 +9,7 @@ import { RoomNotFoundException } from "@room/exceptions/room/room-not-found-exce
 import { RoomService } from "@room/services/room.service";
 import { Kysely } from "kysely";
 import { v4 as uuidv4 } from "uuid";
+import { EmailService } from "./email.service";
 interface ExtraServiceProps {
   roomId: number;
   extraServiceId: number;
@@ -36,7 +37,8 @@ export class BookingService {
     private readonly roomService: RoomService,
     private readonly extraServiceService: ExtraServiceService,
     private readonly reservationService: ReservationService,
-    private readonly reservationDetailService: ReservationDetailService
+    private readonly reservationDetailService: ReservationDetailService,
+    private readonly emailService: EmailService
   ) {}
 
   // TODO: Test
@@ -52,11 +54,15 @@ export class BookingService {
     if (rooms.some((room) => !room)) {
       throw new RoomNotFoundException();
     }
+    const checkIn = new Date(props.checkInDate);
+    checkIn.setHours(15, 0, 0, 0);
+    const checkOut = new Date(props.checkOutDate);
+    checkOut.setHours(11, 0, 0, 0);
     for (const room of rooms) {
       const isBookedRoom = await this.roomService.isBookedRoom({
         roomId: room.id,
-        checkInDate: props.checkInDate,
-        checkOutDate: props.checkOutDate,
+        checkInDate: this.toSqlDateTime(checkIn),
+        checkOutDate: this.toSqlDateTime(checkOut),
       });
       if (isBookedRoom) {
         throw new RoomANotAvailableException();
@@ -70,10 +76,7 @@ export class BookingService {
         })
       )
     );
-    const checkIn = new Date(props.checkInDate);
-    checkIn.setHours(15, 0, 0, 0);
-    const checkOut = new Date(props.checkOutDate);
-    checkOut.setHours(11, 0, 0, 0);
+
     const totalDays = Math.ceil(
       (checkOut.getTime() - checkIn.getTime()) / (1000 * 60 * 60 * 24)
     );
@@ -117,6 +120,14 @@ export class BookingService {
         }
         return reservation;
       });
+    if (createdReservation) {
+      this.emailService.send({
+        to: guest.email,
+        subject: "Reservation Confirmed",
+        text: `Dear ${guest.name}, \n
+        Your reservation with id ${createdReservation.external_reference} is confirmed. \n Check in date: ${createdReservation.check_in_at} \n Check-out date: ${createdReservation.check_out_at} \n Total price: ${totalPrice}`,
+      });
+    }
     return createdReservation;
   }
 

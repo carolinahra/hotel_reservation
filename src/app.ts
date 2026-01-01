@@ -1,7 +1,7 @@
 import { GetGuestRequestDTO } from "@guest/requests/get-guest.request.dto";
 import { Container } from "@shared/container";
 import express from "express";
-import "dotenv/config";
+import dotenv from "dotenv";
 import type { Request, NextFunction, Response } from "express";
 import cors from "cors";
 import { InsertGuestRequestDTO } from "@guest/requests/insert-guest.request.dto";
@@ -22,6 +22,7 @@ import { GetBookingPriceRequestDTO } from "@shared/requests/get-booking-price.re
 
 const app = express();
 const port = 3000;
+dotenv.config();
 
 app.use(express.json());
 app.use(cors({ origin: "*" }));
@@ -36,6 +37,10 @@ const container = new Container({
   },
   log: {
     logPath: process.env.LOG_PATH,
+  },
+  email: {
+    email: process.env.GOOGLE_EMAIL,
+    password: process.env.GOOGLE_APP_PASSWORD,
   },
 });
 
@@ -60,7 +65,7 @@ app.use((req: Request, res: Response, next: NextFunction) => {
 
 const guestController = container.guestController;
 
-app.get("/guests", (req, res) => {
+app.get("/guests", async (req, res) => {
   const request = GetGuestRequestDTO.fromRequest({
     name: req.query.name,
     phone: req.query.phone,
@@ -69,17 +74,27 @@ app.get("/guests", (req, res) => {
     offset: req.query.offset,
   });
 
-  guestController
-    .get(request)
-    .then((guests) =>
-      res.send(
-        Array.isArray(guests)
-          ? guests.map((guest) => guest.toPrimitives())
-          : guests instanceof ErrorResponse
-          ? guests
-          : guests.toPrimitives()
-      )
-    );
+  if (req.query.filter) {
+    const guests = await guestController.getBy(request);
+
+    if (guests instanceof ErrorResponse) {
+      return res.status(400).json(guests);
+    }
+
+    return res.json(guests.map((guest) => guest.toPrimitives()));
+  }
+
+  const guests = await guestController.get(request);
+
+  if (guests instanceof ErrorResponse) {
+    return res.status(400).json(guests);
+  }
+
+  return res.json(
+    Array.isArray(guests)
+      ? guests.map((guest) => guest.toPrimitives())
+      : guests.toPrimitives()
+  );
 });
 
 app.post("/guests", (req, res) => {

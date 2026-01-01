@@ -26,11 +26,13 @@
     "typescript": "^5.9.3"
   },
   "dependencies": {
+    "@types/nodemailer": "^7.0.4",
     "cors": "^2.8.5",
     "dotenv": "^17.2.3",
     "express": "^5.1.0",
     "kysely": "^0.28.7",
     "mysql2": "^3.14.1",
+    "nodemailer": "^7.0.10",
     "save-dev": "^0.0.1-security",
     "uuid": "^13.0.0"
   }

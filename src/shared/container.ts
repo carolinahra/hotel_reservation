@@ -37,6 +37,7 @@ import { LogService } from "@shared/services/log.service";
 import { ExceptionService } from "@shared/services/exception.service";
 import { BookingService } from "./services/booking.service";
 import { BookingController } from "./controllers/booking.controller";
+import { EmailService, GmailEmailService } from "./services/email.service";
 
 function connectDatabase(databaseConfig: DatabaseConfig) {
   let dialect;
@@ -81,6 +82,7 @@ interface ContainerProps {
   exceptionService?: ExceptionService;
   bookingService?: BookingService;
   bookingController?: BookingController;
+  emailService?: EmailService;
 }
 interface DatabaseConfig {
   driver: "mysql" | "postgre";
@@ -91,18 +93,32 @@ interface DatabaseConfig {
   port?: number;
 }
 
+interface EmailServiceConfig {
+  email: string;
+  password: string;
+}
+
 interface LogConfig {
   logPath: string;
 }
 
 interface ContainerConfig {
   database: DatabaseConfig;
+  email: EmailServiceConfig;
   log: LogConfig;
 }
 export class Container {
   private readonly props: ContainerProps = {};
 
   constructor(private readonly config: ContainerConfig) {}
+
+  get emailService() {
+    if (this.props.emailService) {
+      return this.props.emailService;
+    }
+    this.props.emailService = new GmailEmailService(this.config.email);
+    return this.props.emailService;
+  }
 
   get database() {
     if (this.props.database) {
@@ -273,7 +289,8 @@ export class Container {
       this.roomService,
       this.extraServiceService,
       this.reservationService,
-      this.reservationDetailService
+      this.reservationDetailService,
+      this.emailService
     );
     return this.props.bookingService;
   }

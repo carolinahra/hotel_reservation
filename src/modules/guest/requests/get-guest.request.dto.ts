@@ -6,6 +6,7 @@ import {
   isValidOffset,
   isValidPhone,
   isValidEmail,
+  isValidString,
 } from "@shared/validation-functions";
 export interface GetGuestRequest {
   id?: unknown;
@@ -32,7 +33,7 @@ function validate(request: GetGuestRequest): void {
   if (request.offset && !isValidOffset(request.offset)) {
     throw new InvalidRequestException();
   }
-  if (request.email && !isValidEmail(request.email)) {
+  if (request.email && !isValidString(request.email)) {
     throw new InvalidRequestException();
   }
 }

@@ -44,6 +44,11 @@ export class GuestService {
     return Array.isArray(guests) ? guests : [guests];
   }
 
+  public async getBy(getGuest: GetManyGuest): Promise<Guest[]> {
+    const guests = await this.guestRepository.getBy(getGuest);
+    return guests;
+  }
+
   public update(updateGuest: UpdateGuest) {
     return this.guestRepository.update(updateGuest);
   }

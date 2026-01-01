@@ -20,6 +20,12 @@ export class GuestController {
       .catch((error) => this.exceptionService.handle(error));
   }
 
+  public getBy(request: GetGuestRequestDTO) {
+    return this.guestService
+      .getBy(request)
+      .catch((error) => this.exceptionService.handle(error));
+  }
+
   public update(request: UpdateGuestRequestDTO) {
     return this.guestService.update(request);
   }
@@ -31,8 +37,8 @@ export class GuestController {
   }
 
   public delete(request: DeleteGuestRequestDTO) {
-    return this.guestService.delete(request).catch(() => {
-      throw new GuestNotFoundException();
+    return this.guestService.delete(request).catch((error) => {
+      this.exceptionService.handle(error);
     });
   }
 }

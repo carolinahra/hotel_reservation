@@ -33,7 +33,14 @@ interface GetById {
   id: number;
 }
 export abstract class GuestRepository extends Repository {
-  abstract get(getGuest: GetGuestConfig, transaction?: Transaction<any>): Promise<Guest | Guest[]>;
+  abstract get(
+    getGuest: GetGuestConfig,
+    transaction?: Transaction<any>
+  ): Promise<Guest | Guest[]>;
+  abstract getBy(
+    getGuest: GetGuestConfig,
+    transaction?: Transaction<any>
+  ): Promise<Guest[]>;
   abstract update(updateGuestConfig: UpdateGuestConfig): Promise<Guest>;
   abstract insert(insertGuestConfig: InsertGuestConfig): Promise<Guest>;
   abstract delete(deleteGuestConfig: DeleteGuestConfig): Promise<boolean>;
@@ -48,7 +55,10 @@ export class KyselyGuestRepository extends GuestRepository {
     return this.kysely.transaction();
   }
 
-  public get(getGuest: GetGuestConfig, transaction?: Transaction<GuestTable>): Promise<Guest | Guest[]> {
+  public get(
+    getGuest: GetGuestConfig,
+    transaction?: Transaction<GuestTable>
+  ): Promise<Guest | Guest[]> {
     if (getGuest.id) {
       return this.getById({ id: getGuest.id }, transaction);
     }
@@ -58,6 +68,40 @@ export class KyselyGuestRepository extends GuestRepository {
     if (getGuest.limit != null && getGuest.offset != null) {
       return this.getAll(getGuest);
     }
+  }
+  public async getBy(
+    config: GetGuestConfig,
+    transaction?: Transaction<GuestTable>
+  ): Promise<Guest[]> {
+    const db = transaction ?? this.kysely;
+
+    let query = db.selectFrom("Guest").selectAll();
+
+    const name = config.name?.trim();
+    const email = config.email?.trim();
+    const phone = config.phone?.trim();
+
+    if (name) {
+      query = query.where("Guest.name", "like", `%${name}%`);
+    }
+
+    if (email) {
+      query = query.where("Guest.email", "like", `%${email}%`);
+    }
+
+    if (phone) {
+      query = query.where("Guest.phone", "like", `%${phone}%`);
+    }
+
+    if (config.limit != null) {
+      query = query.limit(config.limit);
+    }
+
+    if (config.offset != null) {
+      query = query.offset(config.offset);
+    }
+
+    return (await query.execute()).map((g) => new Guest(g));
   }
 
   public update(updateGuestConfig: UpdateGuestConfig): Promise<Guest> {
@@ -113,7 +157,10 @@ export class KyselyGuestRepository extends GuestRepository {
       .then(() => true);
   }
 
-  private getById(config: GetById, transaction?: Transaction<GuestTable>): Promise<Guest> {
+  private getById(
+    config: GetById,
+    transaction?: Transaction<GuestTable>
+  ): Promise<Guest> {
     return (transaction || this.kysely)
       .selectFrom("Guest")
       .selectAll()
@@ -169,5 +216,4 @@ export class KyselyGuestRepository extends GuestRepository {
           })
       );
   }
-
 }
