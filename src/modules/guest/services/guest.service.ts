@@ -1,5 +1,6 @@
 import { Guest } from "@guest/models/guest";
 import { GuestRepository } from "@guest/repository/guest.repository";
+import { hashPassword } from "@shared/password/password";
 
 interface GetGuest {
   id?: number;
@@ -55,7 +56,13 @@ export class GuestService {
   }
 
   public insert(insertGuest: InsertGuest) {
-    return this.guestRepository.insert(insertGuest);
+    const passwordHash = hashPassword(insertGuest.password);
+    return this.guestRepository.insert({
+      name: insertGuest.name,
+      email: insertGuest.email,
+      phone: insertGuest.phone,
+      password: passwordHash,
+    });
   }
 
   public delete(deleteGuest: DeleteGuest) {

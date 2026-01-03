@@ -360,7 +360,7 @@ app.post("/login", (req, res) => {
   const request = LoginRequestDTO.fromRequest({
     guestID: req.body.guestID,
     password: req.body.password,
-    sessionExtensionMinutes: req.body.sessionExtensionMinutes,
+    sessionExtensionMinutes: process.env.SESSION_EXTENSION_MINUTES,
   });
   loginController
     .handle(request)

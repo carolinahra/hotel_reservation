@@ -1,6 +1,7 @@
 import { GuestService } from "@guest/services/guest.service";
 import { SessionService } from "@session/services/session.service";
 import { InvalidPasswordException } from "@shared/exceptions/invalid-password.exception";
+import { verifyPassword } from "@shared/password/password";
 import { v4 as uuidv4 } from "uuid";
 interface LoginProps {
   guestID: number;
@@ -16,10 +17,9 @@ export class LoginService {
   public async login(props: LoginProps): Promise<string> {
     try {
       const guest = await this.guestService.getOne({ id: props.guestID });
-      if (guest.password != props.password) {
+      if (!verifyPassword(guest.password, props.password)) {
         throw new InvalidPasswordException();
       }
-
       const token = uuidv4();
       const session = await this.sessionService.insert({
         guestID: guest.id,
