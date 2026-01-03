@@ -43,18 +43,18 @@ export class BookingRequestDTO {
   extraServices?: ExtraServiceBookingProps[];
   checkInDate: string;
   checkOutDate: string;
-  constructor(InsertRoomRequest: {
+  constructor(insertRoomRequest: {
     guestId: number;
     roomsId: number[];
     extraServices?: ExtraServiceBookingProps[];
     checkInDate: string;
     checkOutDate: string;
   }) {
-    this.guestId = InsertRoomRequest.guestId;
-    this.roomsId = InsertRoomRequest.roomsId;
-    this.extraServices = InsertRoomRequest.extraServices;
-    this.checkInDate = InsertRoomRequest.checkInDate;
-    this.checkOutDate = InsertRoomRequest.checkOutDate;
+    this.guestId = insertRoomRequest.guestId;
+    this.roomsId = insertRoomRequest.roomsId;
+    this.extraServices = insertRoomRequest.extraServices;
+    this.checkInDate = insertRoomRequest.checkInDate;
+    this.checkOutDate = insertRoomRequest.checkOutDate;
   }
 
   public static fromRequest(request: BookingRequest): BookingRequestDTO {

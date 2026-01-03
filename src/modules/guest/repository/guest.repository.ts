@@ -23,6 +23,7 @@ interface InsertGuestConfig {
   name: string;
   phone: string;
   email: string;
+  password: string;
 }
 interface DeleteGuestConfig {
   phone?: string;
@@ -124,6 +125,7 @@ export class KyselyGuestRepository extends GuestRepository {
         name: insertGuestConfig.name,
         phone: insertGuestConfig.phone,
         email: insertGuestConfig.email,
+        password: insertGuestConfig.password,
       })
       .execute()
       .then((result) => this.getById({ id: Number(result[0].insertId) }));
@@ -173,6 +175,7 @@ export class KyselyGuestRepository extends GuestRepository {
             name: guest.name,
             phone: guest.phone,
             email: guest.email,
+            password: guest.password,
           })
       );
   }
@@ -213,6 +216,7 @@ export class KyselyGuestRepository extends GuestRepository {
             name: guest.name,
             phone: guest.phone,
             email: guest.email,
+            password: guest.password,
           })
       );
   }

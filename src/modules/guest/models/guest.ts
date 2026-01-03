@@ -5,6 +5,7 @@ export interface GuestProps {
   name: string;
   phone: string;
   email: string;
+  password: string;
 }
 
 export class Guest extends ValueObject<GuestProps> {
@@ -22,16 +23,19 @@ export class Guest extends ValueObject<GuestProps> {
   get phone() {
     return this.props.phone;
   }
-   get email() {
+  get email() {
     return this.props.email;
   }
 
+  get password() {
+    return this.props.password;
+  }
   public toPrimitives() {
     return {
       id: this.props.id,
       name: this.props.name,
       phone: this.props.phone,
-      email: this.props.email
+      email: this.props.email,
     };
   }
 }

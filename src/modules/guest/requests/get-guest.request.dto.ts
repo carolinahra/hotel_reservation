@@ -5,7 +5,6 @@ import {
   isValidLimit,
   isValidOffset,
   isValidPhone,
-  isValidEmail,
   isValidString,
 } from "@shared/validation-functions";
 export interface GetGuestRequest {

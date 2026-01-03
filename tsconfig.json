@@ -19,7 +19,8 @@
       "@shared/*": ["src/shared/*"],
       "@room/*": ["src/modules/room/*"],
       "@reservation/*": ["src/modules/reservation/*"],
-      "@extraService/*": ["src/modules/extra-service/*"]
+      "@extraService/*": ["src/modules/extra-service/*"],
+      "@session/*": ["src/modules/session/*"]
     }
   },
   "include": ["src"]

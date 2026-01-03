@@ -38,6 +38,14 @@ import { ExceptionService } from "@shared/services/exception.service";
 import { BookingService } from "./services/booking.service";
 import { BookingController } from "./controllers/booking.controller";
 import { EmailService, GmailEmailService } from "./services/email.service";
+import {
+  KyselySessionRepository,
+  SessionRepository,
+} from "@session/repositories/session.repository";
+import { Session } from "inspector";
+import { SessionService } from "@session/services/session.service";
+import { LoginService } from "./services/login.service";
+import { LoginController } from "./controllers/login.controller";
 
 function connectDatabase(databaseConfig: DatabaseConfig) {
   let dialect;
@@ -83,6 +91,10 @@ interface ContainerProps {
   bookingService?: BookingService;
   bookingController?: BookingController;
   emailService?: EmailService;
+  sessionRespository?: SessionRepository;
+  sessionService?: SessionService;
+  loginService?: LoginService;
+  loginController?: LoginController;
 }
 interface DatabaseConfig {
   driver: "mysql" | "postgre";
@@ -301,5 +313,40 @@ export class Container {
     }
     this.props.bookingController = new BookingController(this.bookingService);
     return this.props.bookingController;
+  }
+
+  get sessionRepository() {
+    if (this.props.sessionRespository) {
+      return this.props.sessionRespository;
+    }
+    this.props.sessionRespository = new KyselySessionRepository(this.database);
+    return this.props.sessionRespository;
+  }
+
+  get sessionService() {
+    if (this.props.sessionService) {
+      return this.props.sessionService;
+    }
+    this.props.sessionService = new SessionService(this.sessionRepository);
+    return this.props.sessionService;
+  }
+
+  get loginService() {
+    if (this.props.loginService) {
+      return this.props.loginService;
+    }
+    this.props.loginService = new LoginService(
+      this.guestService,
+      this.sessionService
+    );
+    return this.props.loginService;
+  }
+
+  get loginController() {
+    if (this.props.loginController) {
+      return this.props.loginController;
+    }
+    this.props.loginController = new LoginController(this.loginService);
+    return this.props.loginController;
   }
 }

@@ -19,6 +19,7 @@ import { UpdateReservationRequestDTO } from "@reservation/requests/reservation/u
 import { BookingRequestDTO } from "@shared/requests/booking.request.dto";
 import { GetExtraServiceRequestDTO } from "@extraService/requests/get-extra-service.request.dto";
 import { GetBookingPriceRequestDTO } from "@shared/requests/get-booking-price.request.dto";
+import { LoginRequestDTO } from "@shared/requests/login.request.dto";
 
 const app = express();
 const port = 3000;
@@ -102,6 +103,7 @@ app.post("/guests", (req, res) => {
     name: req.body.name,
     phone: req.body.phone,
     email: req.body.email,
+    password: req.body.password,
   });
   guestController
     .insert(request)
@@ -350,6 +352,22 @@ app.post("/booking", (req, res) => {
     .catch((error) => {
       console.log(error);
       res.send(exceptionService.handle(error));
+    });
+});
+
+const loginController = container.loginController;
+app.post("/login", (req, res) => {
+  const request = LoginRequestDTO.fromRequest({
+    guestID: req.body.guestID,
+    password: req.body.password,
+    sessionExtensionMinutes: req.body.sessionExtensionMinutes,
+  });
+  loginController
+    .handle(request)
+    .then((token) => res.send(token))
+    .catch((error) => {
+      console.log(error);
+      return res.send(exceptionService.handle(error));
     });
 });
 
