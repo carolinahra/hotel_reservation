@@ -4,7 +4,7 @@ import { InvalidPasswordException } from "@shared/exceptions/invalid-password.ex
 import { verifyPassword } from "@shared/password/password";
 import { v4 as uuidv4 } from "uuid";
 interface LoginProps {
-  guestID: number;
+  email: string;
   password: string;
   sessionExtensionMinutes: number;
 }
@@ -16,7 +16,7 @@ export class LoginService {
 
   public async login(props: LoginProps): Promise<string> {
     try {
-      const guest = await this.guestService.getOne({ id: props.guestID });
+      const guest = await this.guestService.getOne({ email: props.email });
       if (!verifyPassword(guest.password, props.password)) {
         throw new InvalidPasswordException();
       }

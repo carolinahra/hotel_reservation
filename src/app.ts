@@ -358,7 +358,7 @@ app.post("/booking", (req, res) => {
 const loginController = container.loginController;
 app.post("/login", (req, res) => {
   const request = LoginRequestDTO.fromRequest({
-    guestID: req.body.guestID,
+    email: req.body.email,
     password: req.body.password,
     sessionExtensionMinutes: process.env.SESSION_EXTENSION_MINUTES,
   });
