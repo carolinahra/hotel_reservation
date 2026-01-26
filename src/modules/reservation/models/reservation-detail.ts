@@ -6,7 +6,7 @@ export interface ReservationDetailProps {
   extra_service_id: number;
 }
 export class ReservationDetail extends ValueObject<ReservationDetailProps> {
-  public get number() {
+  public get id() {
     return this.props.id;
   }
 

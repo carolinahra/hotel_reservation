@@ -66,6 +66,9 @@ export class KyselyGuestRepository extends GuestRepository {
     if (getGuest.name) {
       return this.getByName(getGuest);
     }
+    if (getGuest.email) {
+      return this.getByEmail(getGuest);
+    }
     if (getGuest.limit != null && getGuest.offset != null) {
       return this.getAll(getGuest);
     }
@@ -202,7 +205,21 @@ export class KyselyGuestRepository extends GuestRepository {
       .execute()
       .then((guests) => guests.map((guest) => new Guest(guest)));
   }
-
+  private getByEmail(getGuestConfig: GetGuestConfig): Promise<Guest> {
+    return this.kysely
+      .selectFrom("Guest")
+      .selectAll() //
+      .where("Guest.email", "=", getGuestConfig.email)
+      .
+      executeTakeFirst()
+      .then((guest) => new Guest({
+            id: guest.id,
+            name: guest.name,
+            phone: guest.phone,
+            email: guest.email,
+            password: guest.password,
+          }));
+  }
   private getByPhone(getGuestConfig: GetGuestConfig): Promise<Guest> {
     return this.kysely
       .selectFrom("Guest")

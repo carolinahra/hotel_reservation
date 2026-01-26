@@ -6,7 +6,6 @@ import { v4 as uuidv4 } from "uuid";
 interface LoginProps {
   email: string;
   password: string;
-  sessionExtensionMinutes: number;
 }
 export class LoginService {
   constructor(
@@ -15,21 +14,17 @@ export class LoginService {
   ) {}
 
   public async login(props: LoginProps): Promise<string> {
-    try {
-      const guest = await this.guestService.getOne({ email: props.email });
-      if (!verifyPassword(guest.password, props.password)) {
-        throw new InvalidPasswordException();
-      }
-      const token = uuidv4();
-      const session = await this.sessionService.insert({
-        guestID: guest.id,
-        sessionExtensionMinutes: props.sessionExtensionMinutes,
-        token,
-      });
-
-      return session.token;
-    } catch (error) {
-      throw new Error(error);
+    const guest = await this.guestService.getOne({ email: props.email });
+    if (!verifyPassword(guest.password, props.password)) {
+      throw new InvalidPasswordException();
     }
+    const token = uuidv4();
+    const session = await this.sessionService.insert({
+      guestID: guest.id,
+      sessionExtensionMinutes: Number(process.env.SESSION_EXTENSION_MINUTES),
+      token,
+    });
+
+    return session.toPrimitives().token;
   }
 }

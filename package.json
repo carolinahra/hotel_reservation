@@ -9,11 +9,15 @@
   "scripts": {
     "build": "tsc && tsc-alias",
     "prestart": "npm run build",
-    "start": "node --env-file=.env dist/app.js",
-    "dev": "ts-node -r tsconfig-paths/register src/app.ts",
+    "start": "node --env-file=.env dist/bootstrap.js",
+    "dev": "ts-node -r tsconfig-paths/register src/bootstrap.ts",
     "pretest": "npm run build",
     "test": "node --enable-source-maps --test './**/*.spec.js'",
-    "test:coverage": "node --test --experimental-test-coverage --test-reporter=lcov --test-reporter-destination=coverage/lcov.info './**/*.spec.js'"
+    "test:coverage": "node --test --experimental-test-coverage --test-reporter=lcov --test-reporter-destination=coverage/lcov.info './**/*.spec.js'",
+    "pretest:e2e": "npm run build",
+    "pretest:e2e-only": "npm run build",
+    "test:e2e": "node --enable-source-maps --test './**/*.e2e-spec.js'",
+    "test:e2e-only": "node --enable-source-maps --test --test-only './**/*.e2e-spec.js'"
   },
   "devDependencies": {
     "@types/express": "^5.0.3",

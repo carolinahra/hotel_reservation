@@ -5,9 +5,13 @@ import { ReservationDetailTable } from "@shared/database-models/reservation-deta
 
 interface GetReservationDetail {
   id?: number;
+}
+interface GetManyReservationDetails {
   reservationId?: number;
   roomId?: number;
   extraServiceId?: number;
+  limit?: number;
+  offset?: number;
 }
 interface UpdateReservationDetail {
   id: number;
@@ -27,11 +31,26 @@ interface DeleteReservationDetail {
 export class ReservationDetailService {
   constructor(private readonly repository: ReservationDetailRepository) {}
 
-  public get(
+  public async getOne(
     getReservationDetail: GetReservationDetail,
     transaction?: Transaction<ReservationDetailTable>
-  ): Promise<ReservationDetail | ReservationDetail[]> {
-    return this.repository.get(getReservationDetail, transaction);
+  ): Promise<ReservationDetail> {
+    const reservationDetail = await this.repository.get(
+      getReservationDetail,
+      transaction
+    );
+    return Array.isArray(reservationDetail)
+      ? reservationDetail.pop()
+      : reservationDetail;
+  }
+
+  public async getMany(
+    getReservationDetail: GetManyReservationDetails
+  ): Promise<ReservationDetail[]> {
+    const reservationDetails = await this.repository.get(getReservationDetail);
+    return Array.isArray(reservationDetails)
+      ? reservationDetails
+      : [reservationDetails];
   }
   public update(
     updateReservationDetail: UpdateReservationDetail

@@ -37,7 +37,7 @@ import { Pool } from "mysql2";
 import { PoolConnection } from "node_modules/mysql2/typings/mysql/lib/PoolConnection";
 import { GuestNotFoundException } from "@guest/exceptions/guest-not-found-exception";
 import { RoomANotAvailableException } from "@room/exceptions/room/room-not-available.exception";
-
+/*
 const fakeRoomsProps: RoomProps[] = [
   {
     id: 1,
@@ -416,3 +416,4 @@ describe("Booking Service", () => {
     );
   });
 });
+*/

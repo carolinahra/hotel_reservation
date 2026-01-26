@@ -44,9 +44,14 @@ export function isValidString(string): boolean {
   return descriptionRegex.test(String(string));
 }
 
-export function isValidNumber(limit): boolean {
+export function isValidPassword(password): boolean {
+  const passwordRegex = /^[A-Za-z0-9.,;:¡!¿?\-_"'()@#$%&+=*/[\]{}<>|\\^~`]+$/;
+  return passwordRegex.test(password);
+}
+
+export function isValidNumber(number): boolean {
   const numberRegex = /^d+$/;
-  return numberRegex.test(limit.toString());
+  return numberRegex.test(number.toString());
 }
 export function isValidState(state): boolean {
   const stateRegex = /^[A-Za-z]{2,}$/;

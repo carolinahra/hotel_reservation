@@ -4,6 +4,9 @@ import { RoomSizeRepository } from "../repositories/room-size.repository";
 interface GetRoomSize {
   id?: number;
   name?: string;
+}
+
+interface GetManyRoomSizes extends GetRoomSize {
   size?: string;
   limit?: number;
   offset?: number;
@@ -24,8 +27,13 @@ interface DeleteRoomSize {
 export class RoomSizeService {
   constructor(private readonly roomSizeRepository: RoomSizeRepository) {}
 
-  public get(getRoomSize: GetRoomSize): Promise<RoomSize | RoomSize[]> {
-    return this.roomSizeRepository.get(getRoomSize);
+  public async getOne(getRoomSize: GetRoomSize): Promise<RoomSize> {
+    const room = await this.roomSizeRepository.get(getRoomSize);
+    return Array.isArray(room) ? room.pop() : room;
+  }
+  public async getMany(getRoomSize: GetManyRoomSizes): Promise<RoomSize[]> {
+    const rooms = await this.roomSizeRepository.get(getRoomSize);
+    return Array.isArray(rooms) ? rooms : [rooms];
   }
   public update(updateRoomSize: UpdateRoomSize): Promise<RoomSize> {
     return this.roomSizeRepository.update(updateRoomSize);

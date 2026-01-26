@@ -35,17 +35,17 @@ import { ReservationDetailService } from "@reservation/services/reservation-deta
 import { ReservationService } from "@reservation/services/reservation.service";
 import { LogService } from "@shared/services/log.service";
 import { ExceptionService } from "@shared/services/exception.service";
-import { BookingService } from "./services/booking.service";
-import { BookingController } from "./controllers/booking.controller";
+import { BookingService } from "@shared/services/booking.service";
+import { BookingController } from "@shared/controllers/booking.controller";
 import { EmailService, GmailEmailService } from "./services/email.service";
 import {
   KyselySessionRepository,
   SessionRepository,
 } from "@session/repositories/session.repository";
-import { Session } from "inspector";
 import { SessionService } from "@session/services/session.service";
-import { LoginService } from "./services/login.service";
-import { LoginController } from "./controllers/login.controller";
+import { LoginService } from "@shared/services/login.service";
+import { LoginController } from "@shared/controllers/login.controller";
+import { SessionMiddleware } from "@shared/middlewares/session.middleware";
 
 function connectDatabase(databaseConfig: DatabaseConfig) {
   let dialect;
@@ -95,8 +95,9 @@ interface ContainerProps {
   sessionService?: SessionService;
   loginService?: LoginService;
   loginController?: LoginController;
+  tokenValidationMiddleware?: SessionMiddleware;
 }
-interface DatabaseConfig {
+export interface DatabaseConfig {
   driver: "mysql" | "postgre";
   host: string;
   user: string;
@@ -132,6 +133,9 @@ export class Container {
     return this.props.emailService;
   }
 
+  set emailService(emailService: EmailService) {
+    this.props.emailService = emailService;
+  }
   get database() {
     if (this.props.database) {
       return this.props.database;
@@ -162,7 +166,7 @@ export class Container {
     }
     this.props.guestController = new GuestController(
       this.guestService,
-      this.exceptionService
+      this.exceptionService,
     );
     return this.props.guestController;
   }
@@ -185,7 +189,10 @@ export class Container {
     if (this.props.roomController) {
       return this.props.roomController;
     }
-    this.props.roomController = new RoomController(this.roomService);
+    this.props.roomController = new RoomController(
+      this.roomService,
+      this.exceptionService,
+    );
     return this.props.roomController;
   }
   get reservationRepository() {
@@ -193,7 +200,7 @@ export class Container {
       return this.props.reservationRepository;
     }
     this.props.reservationRepository = new KyselyReservationRepository(
-      this.database
+      this.database,
     );
     return this.props.reservationRepository;
   }
@@ -203,7 +210,7 @@ export class Container {
       return this.props.reservationService;
     }
     this.props.reservationService = new ReservationService(
-      this.reservationRepository
+      this.reservationRepository,
     );
     return this.props.reservationService;
   }
@@ -212,7 +219,8 @@ export class Container {
       return this.props.reservationController;
     }
     this.props.reservationController = new ReservationController(
-      this.reservationService
+      this.reservationService,
+      this.exceptionService,
     );
     return this.props.reservationController;
   }
@@ -231,7 +239,7 @@ export class Container {
       return this.props.reservationDetailService;
     }
     this.props.reservationDetailService = new ReservationDetailService(
-      this.reservationDetailRepository
+      this.reservationDetailRepository,
     );
     return this.props.reservationDetailService;
   }
@@ -240,7 +248,8 @@ export class Container {
       return this.props.reservationDetailController;
     }
     this.props.reservationDetailController = new ReservationDetailController(
-      this.reservationDetailService
+      this.reservationDetailService,
+      this.exceptionService,
     );
     return this.props.reservationDetailController;
   }
@@ -250,7 +259,7 @@ export class Container {
       return this.props.extraServiceRepository;
     }
     this.props.extraServiceRepository = new KyselyExtraServiceRepository(
-      this.database
+      this.database,
     );
     return this.props.extraServiceRepository;
   }
@@ -260,7 +269,7 @@ export class Container {
       return this.props.extraServiceService;
     }
     this.props.extraServiceService = new ExtraServiceService(
-      this.extraServiceRepository
+      this.extraServiceRepository,
     );
     return this.props.extraServiceService;
   }
@@ -270,7 +279,8 @@ export class Container {
       return this.props.extraServiceController;
     }
     this.props.extraServiceController = new ExtraServiceController(
-      this.extraServiceService
+      this.extraServiceService,
+      this.exceptionService,
     );
     return this.props.extraServiceController;
   }
@@ -302,7 +312,7 @@ export class Container {
       this.extraServiceService,
       this.reservationService,
       this.reservationDetailService,
-      this.emailService
+      this.emailService,
     );
     return this.props.bookingService;
   }
@@ -311,7 +321,10 @@ export class Container {
     if (this.props.bookingController) {
       return this.props.bookingController;
     }
-    this.props.bookingController = new BookingController(this.bookingService);
+    this.props.bookingController = new BookingController(
+      this.bookingService,
+      this.exceptionService,
+    );
     return this.props.bookingController;
   }
 
@@ -337,7 +350,7 @@ export class Container {
     }
     this.props.loginService = new LoginService(
       this.guestService,
-      this.sessionService
+      this.sessionService,
     );
     return this.props.loginService;
   }
@@ -348,5 +361,16 @@ export class Container {
     }
     this.props.loginController = new LoginController(this.loginService);
     return this.props.loginController;
+  }
+
+  get tokenValidationMiddleware() {
+    if (this.props.tokenValidationMiddleware) {
+      return this.props.tokenValidationMiddleware;
+    }
+    this.props.tokenValidationMiddleware = new SessionMiddleware(
+      this.sessionService,
+      this.exceptionService,
+    );
+    return this.props.tokenValidationMiddleware;
   }
 }

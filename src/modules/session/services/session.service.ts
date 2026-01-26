@@ -22,21 +22,18 @@ interface UpdateSession {
   guestID?: number;
   sessionExtensionMinutes?: number;
 }
-interface DeleteSession {
-  token: string;
-}
 
 export class SessionService {
   constructor(private readonly repository: SessionRepository) {}
 
   public async getOne(getSession: GetSession): Promise<Session> {
-    const guest = await this.repository.get(getSession);
-    return Array.isArray(guest) ? guest.pop() : guest;
+    const session = await this.repository.get(getSession);
+    return Array.isArray(session) ? session.pop() : session;
   }
 
   public async getMany(getSession: GetManySessions): Promise<Session[]> {
-    const guests = await this.repository.get(getSession);
-    return Array.isArray(guests) ? guests : [guests];
+    const sessions = await this.repository.get(getSession);
+    return Array.isArray(sessions) ? sessions : [sessions];
   }
 
   public insert(insertSession: InsertSession): Promise<Session> {
@@ -45,9 +42,5 @@ export class SessionService {
 
   public update(updateSession: UpdateSession): Promise<Session> {
     return this.repository.update(updateSession);
-  }
-
-  public delete(deleteSession: DeleteSession): Promise<boolean> {
-    return this.repository.delete(deleteSession);
   }
 }

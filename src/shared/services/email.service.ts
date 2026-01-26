@@ -3,7 +3,7 @@ export interface EmailConfig {
   email: string;
   password: string;
 }
-interface MessageProps {
+export interface MessageProps {
   to: string;
   subject: string;
   text: string;

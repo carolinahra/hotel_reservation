@@ -1,13 +1,12 @@
 import { Session } from "@session/models/session";
 import { SessionTable } from "@shared/database-models/session.database-model";
 import { Repository } from "@shared/repositories/repository";
-import { Kysely, Transaction } from "kysely";
+import { Kysely, sql, Transaction } from "kysely";
 
 export abstract class SessionRepository extends Repository {
   abstract get(config: GetSessionConfig): Promise<Session | Session[]>;
   abstract insert(config: InsertSessionConfig): Promise<Session>;
   abstract update(config: UpdateSessionConfig): Promise<Session>;
-  abstract delete(config: DeleteRoomConfig): Promise<boolean>;
 }
 
 interface GetSessionConfig {
@@ -28,9 +27,6 @@ interface UpdateSessionConfig {
   token: string;
   guestID?: number;
   sessionExtensionMinutes?: number;
-}
-interface DeleteRoomConfig {
-  token: string;
 }
 interface GetByIDConfig {
   id: number;
@@ -72,30 +68,25 @@ export class KyselySessionRepository extends SessionRepository {
         session_extension_minutes: config.sessionExtensionMinutes,
       })
       .executeTakeFirst()
-      .then((result) => this.getByID({ id: Number(result[0].insertId) }));
+      .then((result) =>
+        this.getByID({ id: Number(result.insertId.toString()) })
+      );
   }
 
-  public update(
+  public async update(
     config: UpdateSessionConfig,
     transaction?: Transaction<Database>
   ): Promise<Session> {
-    return (transaction || this.kysely)
+    await (transaction || this.kysely)
       .updateTable("Session")
       .set({
         guest_id: config.guestID,
         session_extension_minutes: config.sessionExtensionMinutes,
+        updated_at: sql`NOW()`,
       })
       .where("Session.token", "=", config.token)
-      .executeTakeFirst()
-      .then((result) => this.getByID({ id: Number(result[0].insertId) }));
-  }
-
-  public delete(config: DeleteRoomConfig): Promise<boolean> {
-    return this.kysely
-      .deleteFrom("Session")
-      .where("Session.token", "=", config.token)
-      .execute()
-      .then(() => true);
+      .executeTakeFirst();
+    return this.getByToken({ token: config.token }, transaction);
   }
 
   private getAll(config: GetSessionConfig): Promise<Session[]> {
@@ -107,25 +98,25 @@ export class KyselySessionRepository extends SessionRepository {
       .execute()
       .then((sessions) => sessions.map((session) => new Session(session)));
   }
-  private getByID(config: GetByIDConfig): Promise<Session> {
-    return this.kysely
+  private async getByID(config: GetByIDConfig): Promise<Session> {
+    const row = await this.kysely
       .selectFrom("Session")
       .selectAll()
       .where("Session.id", "=", config.id)
-      .executeTakeFirst()
-      .then((session) => new Session(session));
+      .executeTakeFirst();
+    return row ? new Session(row) : null;
   }
 
-  private getByToken(
+  private async getByToken(
     config: GetSessionConfig,
     transaction?: Transaction<Database>
   ): Promise<Session> {
-    return (transaction || this.kysely)
+    const row = await (transaction || this.kysely)
       .selectFrom("Session")
       .selectAll()
       .where("Session.token", "=", config.token)
-      .executeTakeFirst()
-      .then((session) => new Session(session));
+      .executeTakeFirst();
+    return row ? new Session(row) : null;
   }
 
   private getByGuestID(
